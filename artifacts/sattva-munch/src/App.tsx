@@ -134,7 +134,22 @@ function Hero() {
           <HeroCanvas />
           <div className="hero-orbit" aria-hidden="true">
             <span className="orbit-dot dot-a" /><span className="orbit-dot dot-b" /><span className="orbit-dot dot-c" />
-            <div className="makhana-hero" />
+            <span className="makhana-shadow" />
+            <div className="makhana-hero" aria-label="A roasted makhana with clustered, toasted lobes">
+              <span className="makhana-lobe lobe-a" />
+              <span className="makhana-lobe lobe-b" />
+              <span className="makhana-lobe lobe-c" />
+              <span className="makhana-lobe lobe-d" />
+              <span className="makhana-lobe lobe-e" />
+              <span className="makhana-lobe lobe-f" />
+              <span className="makhana-lobe lobe-g" />
+              <span className="roast-speck speck-a" />
+              <span className="roast-speck speck-b" />
+              <span className="roast-speck speck-c" />
+              <span className="roast-speck speck-d" />
+              <span className="roast-speck speck-e" />
+              <span className="roast-speck speck-f" />
+            </div>
           </div>
           <div className="hero-stamp">100%<br />certified<br />organic</div>
           <p className="hero-note">One Indian seed.<br />A world of appetite.</p>
