@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "SattvaMunch Brand Website"
+description = "A premium, cinematic brand website for SattvaMunch, an organic makhana snack brand pairing India's ancient grain with globally inspired flavors."
+version = "1.0.0"
+id = "artifacts/sattva-munch"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 26260
+
+[services.development]
+run = "pnpm --filter @workspace/sattva-munch run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/sattva-munch", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/sattva-munch/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "26260"
+BASE_PATH = "/"

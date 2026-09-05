@@ -1,0 +1,53 @@
+You are a senior frontend engineer and art director building a premium, portfolio-quality, 3D-driven brand website for SattvaMunch, a 100%-certified-organic makhana snack brand. This site will eventually be featured in a design/development portfolio, so code quality, visual polish, animation craft, and attention to detail matter as much as the content itself.
+
+TECH STACK: Next.js (App Router) + Tailwind CSS + React Three Fiber (Three.js) for 3D work + Framer Motion for scroll/UI animation and page transitions. This site should feel alive throughout — not just the hero. Use scroll-triggered reveals (fade/slide-up as sections enter view), smooth easing on every transition, and subtle hover micro-interactions on buttons, cards, and links site-wide. Fully responsive, accessible (semantic HTML, proper contrast, alt text, reduced-motion fallback for users with motion sensitivity preferences), and performant despite the 3D work (lazy-load the 3D canvas, cap pixel ratio, dispose of unused geometry).
+
+ASSETS PROVIDED AS REAL UPLOADED FILES (place in /public and reference directly — these render visually on the site itself):
+- SattvaMunch final logo (PNG/SVG) — use in navbar, footer, and hero
+- 7 social carousel images (slide_1 through slide_7)
+I will upload these directly into this Replit project's file panel after setup — reference them as real assets, not placeholders.
+
+ASSETS PROVIDED AS EXTERNAL LINKS (used only as href targets for buttons — you do not need to fetch, read, or preview these, just wire the URL into a link/button exactly as given):
+- Brand Strategy PDF: [https://drive.google.com/file/d/1dbJJXmg-xaGjjqgFF3ps1UIgVtJJdyvT/view?usp=sharing]
+- Marketing Campaign PDF: [https://drive.google.com/file/d/10mqR9b1_ReuTWpES3CR0QO_0VI7eujOJ/view?usp=sharing]
+- Visual Identity Deck (Google Slides): [https://docs.google.com/presentation/d/1CSgW7fO6mgjr5dXkSHlkvLTVAri0di_W/edit?usp=sharing&ouid=102832170138504550695&rtpof=true&sd=true]
+- Investor Pitch Deck (Google Slides): [Currently, I am working on it, for now you are just supposed to add a format or a section for it where it can be added once ready just like the other documents]
+All four links should open in a new tab (target="_blank").
+
+BUILD THE FOLLOWING SECTIONS:
+
+1. NAVIGATION: Sticky nav — real uploaded logo left, links (Brand / Flavors / Campaign / Gallery / Press Kit), transparent over hero fading to solid Warm Ivory (#F5EFE0) with a soft blur-backdrop on scroll.
+
+2. HERO — LIVE 3D SCENE: This is the centerpiece of the site and should feel like a looping cinematic clip, not a static image.
+   - Build a real, live React Three Fiber scene (not a rendered image or video file) containing one hero object: a single roasted, seasoned makhana piece, modeled as a deformed sphere/icosahedron with irregular vertex displacement (noise-based) so it reads as an organic, popcorn-like, irregularly-round shape rather than a perfect sphere or a smooth almond shape.
+   - Material: warm cream-white base color with a subtle procedural speckle/bump texture (roughness variation) to suggest roasted seasoning flecks, matte (not glossy/plastic-looking) finish.
+   - Lighting: one soft key light plus ambient fill, casting a soft, realistic, slightly blurred drop shadow onto an invisible ground-catcher plane beneath the object (use Three.js ContactShadows or soft shadow-mapping) — the shadow must look grounded and physically plausible, not a flat dark oval.
+   - Animation: continuous slow auto-rotation on the Y axis (idle, never stops), plus a very subtle gentle vertical bob (floating feel). On page load, animate the camera easing in from slightly further away/lower to its resting position (a 1-1.5 second cinematic entrance), so the first impression feels like a shot from a film, not a static screenshot.
+   - Ambient life: add a small number of soft, slowly drifting particle specks (suggesting fine spice dust) around the object using simple point sprites, low opacity, slow independent motion — this is what should make the whole hero feel like a living clip rather than a still render.
+   - Optional nice-to-have if straightforward: subtle parallax tilt of the 3D object toward the cursor on mouse move (desktop only, disabled on touch).
+   - Headline (overlaid on/beside the 3D canvas): "Ancient grain, modern palate." Subhead: "A premium, 100% certified-organic makhana brand — four flavors, one honest promise." Feature the real uploaded logo in the nav, not competing with the 3D object.
+   - Background: Warm Ivory, with the faint animated seed/circle motif (SVG, concentric rings, Saffron #E8922A stroke) positioned behind the 3D canvas at low opacity so it doesn't compete with the object.
+
+3. THE DIFFERENTIATION: Short section, scroll-reveal animation on entry, stating SattvaMunch is the only makhana brand combining full-chain organic certification (ingredient + spice + packaging) with globally-inspired flavor development. Reference Farmley/Nutraj as the conventional category default, without disparaging them.
+
+4. FLAVOR EXPLORER: Interactive 4-card grid, one per flavor, using the official flavor accent colors — Smoke & Pepper #4A4A48, Golden Sesame #C8A84B, Pom Rose #C0445A, Truffle Rosemary #5C6B4E. Cards animate in with a staggered reveal on scroll, and expand smoothly on hover/click (spring easing, not a hard cut) to show the flavor's cultural inspiration and key ingredients.
+
+5. BRAND STRATEGY OVERVIEW: Headline "The Strategy Behind the Snack." 2-3 sentence summary: "SattvaMunch is built on a single idea — that India's oldest grain could carry the world's flavors without ever compromising its purity. Our full brand strategy covers positioning, personas, messaging, and brand story in detail." Button: "View Full Brand Strategy" → links to the Brand Strategy PDF URL above, with a subtle hover lift/scale micro-interaction.
+
+6. VISUAL IDENTITY OVERVIEW: Headline "Designed With Intention." 2-3 sentence summary covering the logo system, color palette, and typography direction at a glance. Show the 4 official flavor colors as small swatches that gently animate/pulse in on scroll. Button: "View Full Visual Identity Deck" → links to the Visual Identity Slides URL above.
+
+7. MARKETING CAMPAIGN — "THE SEED'S PASSPORT": Headline "One Seed. Four Worlds. Zero Compromise." 2-3 sentence summary of the passport/stamp campaign concept. Button: "View Full Campaign Deck" → links to the Marketing Campaign PDF URL above.
+
+8. SOCIAL CAROUSEL GALLERY: Display all 7 real uploaded carousel slide images in a horizontal scrollable/swipeable gallery (mimic an Instagram carousel interaction, smooth momentum scroll with snap points), captioned "From Our Instagram — The Seed's Passport."
+
+9. BRAND FILM (PLACEHOLDER SECTION — BUILD NOW, FILL LATER): A full-width video section with headline "Watch the Story." Build a styled video player component with a placeholder poster image (use the real logo centered on a Warm Ivory background) and a disabled/greyed play button state. Structure the component to accept a video src prop so a real uploaded video file can be dropped in later with no rebuild needed.
+
+10. VISUAL GALLERY (PLACEHOLDER SECTION — BUILD NOW, FILL LATER): Headline "The Full Visual World." A responsive grid of 10 image slots, each at a fixed 3:2 landscape aspect ratio, labeled with these exact titles (styled placeholder boxes with the title text centered until real images are added): Brand Hero, Product Hero, Signature Campaign Poster, Lifestyle Visual, Product Detail, Social Advertisement, Website Hero, Investor Pitch-Deck Hero, 3D Product Render, Campaign Key Visual. Structure this as a reusable image-grid component so each placeholder can be swapped for a real uploaded image individually later.
+
+11. INVESTOR PITCH DECK: Short section, headline "Built to Scale." 2-3 sentence summary: "SattvaMunch's investor pitch deck outlines our market opportunity, business model, and growth roadmap." Button: "View Pitch Deck" → links to the Investor Pitch Deck Slides URL above.
+
+12. FOOTER: Real uploaded logo, nav links, social icons, "100% Certified Organic · Plastic-Free" badge line, newsletter signup field.
+
+Use the exact color codes and fonts already established: Warm Ivory #F5EFE0 (background), Saffron #E8922A (accent), Deep Earth #3B2314 (text/headlines). Headlines in Playfair Display Black (Canela Display substitute), body in Inter or system sans (Neue Haas Grotesk substitute), flavor names in Playfair Display Italic.
+
+Build all 12 sections now with real, finished copy wherever provided above — do not leave any section as "coming soon" text except sections 9 and 10, which should be fully styled and structurally complete, just visually empty/disabled until real media is uploaded and dropped in.

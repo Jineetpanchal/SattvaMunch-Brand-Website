@@ -1,6 +1,6 @@
-# [Project name]
+# SattvaMunch Brand Website
 
-_Replace the heading above with the project's name, and this line with one sentence describing what this app does for users._
+An editorial, scroll-led brand site for SattvaMunch, a premium 100%-certified-organic makhana snack brand pairing India's ancient grain with globally inspired flavors.
 
 ## Run & Operate
 
@@ -22,23 +22,31 @@ _Replace the heading above with the project's name, and this line with one sente
 
 ## Where things live
 
-_Populate as you build — short repo map plus pointers to the source-of-truth file for DB schema, API contracts, theme files, etc._
+- `artifacts/sattva-munch/src/App.tsx` — single-page brand experience and interactive sections
+- `artifacts/sattva-munch/src/index.css` — SattvaMunch visual system, responsive layout, motion, and reduced-motion rules
+- `artifacts/sattva-munch/public/assets/` — logos, seven real campaign carousel slides, and local document copies
+- `artifacts/sattva-munch/.replit-artifact/artifact.toml` — preview/deployment routing metadata
+- `artifacts/api-server/` — shared API service scaffold; not currently needed by the static brand site
 
 ## Architecture decisions
 
-_Populate as you build — non-obvious choices a reader couldn't infer from the code (3-5 bullets)._
+- The brand site is a frontend-only React + Vite artifact; it does not depend on the API server or a database.
+- Real uploaded campaign and logo assets are served from the website's public assets directory rather than remote placeholders.
+- The hero's seed/orbit treatment is canvas-driven and respects reduced-motion preferences.
+- External strategy and campaign references open in new tabs; the local PDF copies remain available with the website assets.
 
 ## Product
 
-_Describe the high-level user-facing capabilities of this app once they exist._
+The site presents the SattvaMunch story, four globally inspired flavors, the Seed's Passport campaign, the real social carousel, brand documents, a future-ready brand-film slot, and a reusable visual gallery layout. It includes responsive navigation, flavor selection, carousel controls, newsletter feedback, and accessible motion fallbacks.
 
 ## User preferences
 
-_Populate as you build — explicit user instructions worth remembering across sessions._
+The brand should feel premium, culturally confident, globally curious, and warm without drifting into generic wellness or rustic snack clichés.
 
 ## Gotchas
 
-_Populate as you build — sharp edges, "always run X before Y" rules._
+- The artifact workflow supplies `PORT` and `BASE_PATH`; run the website through `artifacts/sattva-munch: web`.
+- The original logo uploads included large white margins, so the served copies in `public/assets` are transparently trimmed derivatives for reliable nav/footer sizing.
 
 ## Pointers
 
