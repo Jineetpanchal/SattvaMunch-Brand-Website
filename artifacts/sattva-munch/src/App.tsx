@@ -1,6 +1,9 @@
-import { useEffect, useRef, useState, type FormEvent } from 'react';
+import { Suspense, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { ContactShadows, useGLTF } from '@react-three/drei';
 import { ArrowDown, ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
+import * as THREE from 'three';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
 import { TooltipProvider } from '@/components/ui/tooltip';
@@ -84,6 +87,154 @@ function HeroCanvas() {
   return <canvas className="hero-canvas" ref={ref} aria-label="A gently orbiting seed and particle field" />;
 }
 
+const MAKHANA_MODEL_URL = '/models/sample.glb';
+
+function RoastedMakhanaModel() {
+  const { scene } = useGLTF(MAKHANA_MODEL_URL);
+  const normalizedModel = useMemo(() => {
+    const model = scene.clone(true);
+    const bounds = new THREE.Box3().setFromObject(model);
+    const center = bounds.getCenter(new THREE.Vector3());
+    const size = bounds.getSize(new THREE.Vector3());
+    const scale = 2.55 / Math.max(size.x, size.y, size.z);
+
+    model.scale.setScalar(scale);
+    model.position.set(-center.x * scale, -bounds.min.y * scale, -center.z * scale);
+    model.traverse((child) => {
+      if (!(child instanceof THREE.Mesh)) return;
+      const materials = Array.isArray(child.material) ? child.material : [child.material];
+      materials.forEach((material) => {
+        if (material instanceof THREE.MeshStandardMaterial) {
+          material.roughness = Math.max(material.roughness, 0.78);
+          material.metalness = 0;
+          material.envMapIntensity = 0.25;
+        }
+      });
+      child.castShadow = true;
+      child.receiveShadow = true;
+    });
+    return model;
+  }, [scene]);
+
+  return <primitive object={normalizedModel} />;
+}
+
+function ModelFallback() {
+  return (
+    <mesh position={[0, 0.62, 0]} scale={[1.18, 0.84, 1]}>
+      <icosahedronGeometry args={[0.9, 2]} />
+      <meshStandardMaterial color="#ead7b0" roughness={0.92} metalness={0} />
+    </mesh>
+  );
+}
+
+function HeroModelScene() {
+  const group = useRef<THREE.Group>(null);
+  const pointer = useRef({ x: 0, y: 0 });
+
+  useEffect(() => {
+    if (!window.matchMedia('(pointer: fine)').matches) return undefined;
+    const onPointerMove = (event: PointerEvent) => {
+      pointer.current.x = (event.clientX / window.innerWidth - 0.5) * 2;
+      pointer.current.y = (event.clientY / window.innerHeight - 0.5) * 2;
+    };
+    window.addEventListener('pointermove', onPointerMove, { passive: true });
+    return () => window.removeEventListener('pointermove', onPointerMove);
+  }, []);
+
+  useFrame(({ camera, clock }) => {
+    const elapsed = clock.getElapsedTime();
+    const entrance = Math.min(elapsed / 1.35, 1);
+    const easedEntrance = 1 - Math.pow(1 - entrance, 3);
+    camera.position.z = THREE.MathUtils.lerp(5.8, 4.25, easedEntrance);
+    camera.position.y = THREE.MathUtils.lerp(0.35, 0.16, easedEntrance);
+    camera.lookAt(0, 0.72, 0);
+
+    if (!group.current) return;
+    group.current.rotation.y = elapsed * 0.28;
+    group.current.rotation.x = THREE.MathUtils.lerp(
+      group.current.rotation.x,
+      Math.sin(elapsed * 0.55) * 0.035 - pointer.current.y * 0.045,
+      0.06,
+    );
+    group.current.rotation.z = THREE.MathUtils.lerp(group.current.rotation.z, pointer.current.x * 0.04, 0.06);
+    group.current.position.y = Math.sin(elapsed * 0.8) * 0.06;
+  });
+
+  return (
+    <>
+      <group ref={group}>
+        <Suspense fallback={<ModelFallback />}>
+          <RoastedMakhanaModel />
+        </Suspense>
+      </group>
+      <ContactShadows position={[0, -0.015, 0]} opacity={0.26} scale={3.05} blur={2.2} far={0.75} />
+    </>
+  );
+}
+
+useGLTF.preload(MAKHANA_MODEL_URL);
+
+function canUseWebGL() {
+  if (typeof document === 'undefined') return false;
+  try {
+    const canvas = document.createElement('canvas');
+    return Boolean(canvas.getContext('webgl2') || canvas.getContext('webgl'));
+  } catch {
+    return false;
+  }
+}
+
+function StaticMakhanaFallback() {
+  return (
+    <div className="hero-static-model" aria-label="A softly animated roasted makhana model fallback">
+      <span className="static-makhana-shadow" />
+      <span className="static-makhana-object">
+        <span className="static-lobe static-lobe-a" />
+        <span className="static-lobe static-lobe-b" />
+        <span className="static-lobe static-lobe-c" />
+        <span className="static-lobe static-lobe-d" />
+        <span className="static-lobe static-lobe-e" />
+        <span className="static-lobe static-lobe-f" />
+        <span className="static-lobe static-lobe-g" />
+        <span className="static-speck static-speck-a" />
+        <span className="static-speck static-speck-b" />
+        <span className="static-speck static-speck-c" />
+        <span className="static-speck static-speck-d" />
+        <span className="static-speck static-speck-e" />
+      </span>
+    </div>
+  );
+}
+
+function HeroModelCanvas() {
+  const [webglAvailable] = useState(canUseWebGL);
+  if (!webglAvailable) return <StaticMakhanaFallback />;
+
+  return (
+    <div className="hero-model-canvas" aria-label="A slowly rotating roasted makhana 3D model">
+      <Canvas
+        camera={{ position: [0, 0.35, 5.8], fov: 28, near: 0.1, far: 20 }}
+        dpr={[1, 1.6]}
+        gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}
+        shadows
+        fallback={<StaticMakhanaFallback />}
+      >
+        <ambientLight intensity={1.5} color="#fff8ea" />
+        <directionalLight
+          castShadow
+          color="#fff4dc"
+          intensity={2.1}
+          position={[-3.5, 5, 4]}
+          shadow-mapSize={[1024, 1024]}
+        />
+        <directionalLight color="#e8b56b" intensity={0.28} position={[4, 1.5, -2]} />
+        <HeroModelScene />
+      </Canvas>
+    </div>
+  );
+}
+
 function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
@@ -132,24 +283,9 @@ function Hero() {
         </div>
         <div className="hero-aside">
           <HeroCanvas />
+          <HeroModelCanvas />
           <div className="hero-orbit" aria-hidden="true">
             <span className="orbit-dot dot-a" /><span className="orbit-dot dot-b" /><span className="orbit-dot dot-c" />
-            <span className="makhana-shadow" />
-            <div className="makhana-hero" aria-label="A roasted makhana with clustered, toasted lobes">
-              <span className="makhana-lobe lobe-a" />
-              <span className="makhana-lobe lobe-b" />
-              <span className="makhana-lobe lobe-c" />
-              <span className="makhana-lobe lobe-d" />
-              <span className="makhana-lobe lobe-e" />
-              <span className="makhana-lobe lobe-f" />
-              <span className="makhana-lobe lobe-g" />
-              <span className="roast-speck speck-a" />
-              <span className="roast-speck speck-b" />
-              <span className="roast-speck speck-c" />
-              <span className="roast-speck speck-d" />
-              <span className="roast-speck speck-e" />
-              <span className="roast-speck speck-f" />
-            </div>
           </div>
           <div className="hero-stamp">100%<br />certified<br />organic</div>
           <p className="hero-note">One Indian seed.<br />A world of appetite.</p>

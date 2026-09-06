@@ -32,6 +32,7 @@ An editorial, scroll-led brand site for SattvaMunch, a premium 100%-certified-or
 
 - The brand site is a frontend-only React + Vite artifact; it does not depend on the API server or a database.
 - Real uploaded campaign and logo assets are served from the website's public assets directory rather than remote placeholders.
+- The hero uses the uploaded `public/models/sample.glb` through React Three Fiber / drei, with normalized bounds, a Suspense loader fallback, and a non-WebGL CSS fallback.
 - The hero's seed/orbit treatment is canvas-driven and respects reduced-motion preferences.
 - External strategy and campaign references open in new tabs; the local PDF copies remain available with the website assets.
 
