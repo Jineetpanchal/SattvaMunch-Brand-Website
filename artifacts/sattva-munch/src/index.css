@@ -172,7 +172,7 @@ button { cursor: pointer; }
 .hero-orbit::after { inset: 20% -18%; transform: rotate(-55deg); }
 .orbit-dot { position: absolute; width: 10px; height: 10px; border-radius: 50%; background: var(--saffron); z-index: 2; }
 .dot-a { left: 8%; top: 48%; } .dot-b { right: 13%; top: 14%; background: var(--sesame); } .dot-c { bottom: 11%; left: 44%; background: var(--deep-earth); }
-.hero-note { position: absolute; left: 1%; bottom: 7%; max-width: 150px; font-family: var(--app-font-serif); font-style: italic; font-size: 18px; line-height: 1.15; }
+.hero-note { position: absolute; z-index: 5; left: 1%; bottom: 7%; max-width: 150px; font-family: var(--app-font-serif); font-style: italic; font-size: 18px; line-height: 1.15; }
 .hero-scroll { position: absolute; z-index: 2; bottom: 22px; left: 0; display: flex; align-items: center; gap: 12px; color: var(--ink-soft); font-family: var(--app-font-mono); font-size: 10px; letter-spacing: .1em; text-transform: uppercase; }
 .hero-scroll span { display: block; width: 60px; height: 1px; background: var(--saffron); }
 

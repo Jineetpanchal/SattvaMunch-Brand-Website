@@ -168,7 +168,15 @@ function HeroModelScene() {
           <RoastedMakhanaModel />
         </Suspense>
       </group>
-      <ContactShadows position={[0, -0.015, 0]} opacity={0.26} scale={3.05} blur={2.2} far={0.75} />
+      <ContactShadows
+        position={[0, -0.015, 0]}
+        scale={[1.65, 0.9]}
+        opacity={0.18}
+        blur={2.8}
+        far={0.55}
+        color="#3b2314"
+        depthWrite={false}
+      />
     </>
   );
 }
