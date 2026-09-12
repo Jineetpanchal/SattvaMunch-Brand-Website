@@ -1,0 +1,6 @@
+{
+  "name": "SattvaMunch",
+  "description": "SattvaMunch Brand Website — Ancient grain, modern palate. Organic roasted makhana snack brand showcasing flavors and story.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

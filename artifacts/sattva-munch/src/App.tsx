@@ -1,7 +1,7 @@
 import { Suspense, useEffect, useMemo, useRef, useState, type FormEvent } from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { ContactShadows, useGLTF } from '@react-three/drei';
+import { useGLTF } from '@react-three/drei';
 import { ArrowDown, ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
 import * as THREE from 'three';
 import { ErrorBoundary } from '@/components/error-boundary';
@@ -93,15 +93,31 @@ function RoastedMakhanaModel() {
   const { scene } = useGLTF(MAKHANA_MODEL_URL);
   const normalizedModel = useMemo(() => {
     const model = scene.clone(true);
-    const bounds = new THREE.Box3().setFromObject(model);
-    const center = bounds.getCenter(new THREE.Vector3());
-    const size = bounds.getSize(new THREE.Vector3());
-    const scale = 2.55 / Math.max(size.x, size.y, size.z);
 
-    model.scale.setScalar(scale);
-    model.position.set(-center.x * scale, -bounds.min.y * scale, -center.z * scale);
+    // Prune the flat scanning base/slab embedded in the photogrammetry GLTF mesh
     model.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return;
+      const geom = child.geometry;
+      const pos = geom.attributes.position;
+      const idx = geom.index;
+      if (idx && pos) {
+        const newIndices: number[] = [];
+        for (let i = 0; i < idx.count; i += 3) {
+          const a = idx.getX(i);
+          const b = idx.getX(i + 1);
+          const c = idx.getX(i + 2);
+          const ya = pos.getY(a);
+          const yb = pos.getY(b);
+          const yc = pos.getY(c);
+          // Retain only triangles on the makhana seed (y > -0.075), discarding the flat 1x1 base slab
+          if (ya > -0.075 && yb > -0.075 && yc > -0.075) {
+            newIndices.push(a, b, c);
+          }
+        }
+        geom.setIndex(newIndices);
+        geom.computeVertexNormals();
+      }
+
       const materials = Array.isArray(child.material) ? child.material : [child.material];
       materials.forEach((material) => {
         if (material instanceof THREE.MeshStandardMaterial) {
@@ -113,6 +129,15 @@ function RoastedMakhanaModel() {
       child.castShadow = true;
       child.receiveShadow = true;
     });
+
+    const bounds = new THREE.Box3().setFromObject(model);
+    const center = bounds.getCenter(new THREE.Vector3());
+    const size = bounds.getSize(new THREE.Vector3());
+    const scale = 2.4 / Math.max(size.x, size.y, size.z);
+
+    model.scale.setScalar(scale);
+    model.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
+
     return model;
   }, [scene]);
 
@@ -162,22 +187,11 @@ function HeroModelScene() {
   });
 
   return (
-    <>
-      <group ref={group}>
-        <Suspense fallback={<ModelFallback />}>
-          <RoastedMakhanaModel />
-        </Suspense>
-      </group>
-      <ContactShadows
-        position={[0, -0.015, 0]}
-        scale={[1.65, 0.9]}
-        opacity={0.18}
-        blur={2.8}
-        far={0.55}
-        color="#3b2314"
-        depthWrite={false}
-      />
-    </>
+    <group ref={group}>
+      <Suspense fallback={<ModelFallback />}>
+        <RoastedMakhanaModel />
+      </Suspense>
+    </group>
   );
 }
 
@@ -221,6 +235,7 @@ function HeroModelCanvas() {
 
   return (
     <div className="hero-model-canvas" aria-label="A slowly rotating roasted makhana 3D model">
+      <span className="hero-makhana-shadow" aria-hidden="true" />
       <Canvas
         camera={{ position: [0, 0.35, 5.8], fov: 28, near: 0.1, far: 20 }}
         dpr={[1, 1.6]}
@@ -309,6 +324,38 @@ function Ticker() {
   return <div className="ticker" aria-label="SattvaMunch principles"><div className="ticker-track">{[...items, ...items].map((item, index) => <span className="ticker-item" key={`${item}-${index}`}><i>✦</i>{item}</span>)}</div></div>;
 }
 
+function StoryStaticModelScene() {
+  return (
+    <group rotation={[0.2, -0.55, 0.08]} position={[0, 0, 0]}>
+      <Suspense fallback={null}>
+        <RoastedMakhanaModel />
+      </Suspense>
+    </group>
+  );
+}
+
+function StoryStaticMakhana() {
+  const [webglAvailable] = useState(canUseWebGL);
+  if (!webglAvailable) return <div className="seed-core" />;
+
+  return (
+    <div className="seed-model-stage" aria-label="A roasted makhana seed at the center of the grain diagram">
+      <span className="story-makhana-shadow" aria-hidden="true" />
+      <Canvas
+        camera={{ position: [0, 0, 4.5], fov: 28, near: 0.1, far: 20 }}
+        dpr={[1, 1.6]}
+        gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}
+        frameloop="demand"
+      >
+        <ambientLight intensity={1.7} color="#fff8ea" />
+        <directionalLight color="#fff4dc" intensity={2.2} position={[-3, 4, 3]} />
+        <directionalLight color="#e8b56b" intensity={0.35} position={[3, 1, -2]} />
+        <StoryStaticModelScene />
+      </Canvas>
+    </div>
+  );
+}
+
 function Story() {
   return (
     <section className="story" id="story" aria-labelledby="story-title">
@@ -323,7 +370,8 @@ function Story() {
         </div>
       </div>
       <div className="wrap seed-diagram" aria-label="A makhana seed sits at the center of four flavor worlds">
-        <div className="seed-orbit" /><div className="seed-orbit orbit-two" /><div className="seed-core" />
+        <div className="seed-orbit" /><div className="seed-orbit orbit-two" />
+        <StoryStaticMakhana />
         <p className="seed-caption">from wetland<br />to world table<br /><span className="eyebrow">the full chain</span></p>
       </div>
     </section>
@@ -355,6 +403,12 @@ function Chain() {
 function FlavorExplorer() {
   const [selected, setSelected] = useState(0);
   const flavor = flavors[selected];
+  const isSmokeAndPepper = flavor.name === 'Smoke & Pepper';
+  const isGoldenSesame = flavor.name === 'Golden Sesame';
+  const isPomRose = flavor.name === 'Pom Rose';
+  const isTruffleRosemary = flavor.name === 'Truffle Rosemary';
+  const hasProductImage = isSmokeAndPepper || isGoldenSesame || isPomRose || isTruffleRosemary;
+
   return (
     <section className="flavors" id="flavors" aria-labelledby="flavor-title">
       <div className="wrap">
@@ -363,9 +417,120 @@ function FlavorExplorer() {
           <p className="flavor-copy">One ancient Indian seed. Four very different places to take your palate. Select a flavor to start your journey.</p>
         </div>
         <div className="flavor-explorer">
-          <div className="flavor-visual" style={{ background: `radial-gradient(circle at 53% 46%, ${flavor.color}18, #e9d8bd 70%)` }}>
-            <div className="flavor-seed" style={{ boxShadow: `14px 23px 22px ${flavor.color}30` }} />
-            <span className="flavor-label" style={{ color: flavor.color }}>Flavor {String(selected + 1).padStart(2, '0')} / India to everywhere</span>
+          <div
+            className={`flavor-visual ${hasProductImage ? 'has-product-image' : ''}`}
+            style={hasProductImage ? undefined : { background: `radial-gradient(circle at 53% 46%, ${flavor.color}18, #e9d8bd 70%)` }}
+          >
+            {isSmokeAndPepper && (
+              <img
+                id="flavor-product-smoke-pepper"
+                className="flavor-product-image"
+                src="/assets/Flavour 1.jpg"
+                alt="SattvaMunch Smoke & Pepper roasted makhana 25g jar, 50g pouch, and 100g pouch"
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  const fallbacks = [
+                    '/Flavour 1.jpg',
+                    '/assets/flavour-1.jpg',
+                    '/flavour-1.jpg',
+                    '/attached_assets/Flavour 1.jpg',
+                  ];
+                  const currentSrc = decodeURIComponent(new URL(target.src, window.location.origin).pathname);
+                  const nextSrc = fallbacks.find((s) => s !== currentSrc);
+                  if (nextSrc && target.dataset.tried !== nextSrc) {
+                    target.dataset.tried = nextSrc;
+                    target.src = nextSrc;
+                  }
+                }}
+              />
+            )}
+            {isGoldenSesame && (
+              <img
+                id="flavor-product-golden-sesame"
+                className="flavor-product-image"
+                src="/assets/Flavour 2.jpg"
+                alt="SattvaMunch Golden Sesame roasted makhana 25g jar, 50g pouch, and 100g pouch"
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  const fallbacks = [
+                    '/Flavour 2.jpg',
+                    '/assets/flavour-2.jpg',
+                    '/flavour-2.jpg',
+                    '/attached_assets/Flavour 2.jpg',
+                  ];
+                  const currentSrc = decodeURIComponent(new URL(target.src, window.location.origin).pathname);
+                  const nextSrc = fallbacks.find((s) => s !== currentSrc);
+                  if (nextSrc && target.dataset.tried !== nextSrc) {
+                    target.dataset.tried = nextSrc;
+                    target.src = nextSrc;
+                  }
+                }}
+              />
+            )}
+            {isPomRose && (
+              <img
+                id="flavor-product-pom-rose"
+                className="flavor-product-image"
+                src="/assets/Flavour 3.jpg"
+                alt="SattvaMunch Pom Rose roasted makhana 25g jar, 50g pouch, and 100g pouch"
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  const fallbacks = [
+                    '/Flavour 3.jpg',
+                    '/assets/flavour-3.jpg',
+                    '/flavour-3.jpg',
+                    '/attached_assets/Flavour 3.jpg',
+                  ];
+                  const currentSrc = decodeURIComponent(new URL(target.src, window.location.origin).pathname);
+                  const nextSrc = fallbacks.find((s) => s !== currentSrc);
+                  if (nextSrc && target.dataset.tried !== nextSrc) {
+                    target.dataset.tried = nextSrc;
+                    target.src = nextSrc;
+                  }
+                }}
+              />
+            )}
+            {isTruffleRosemary && (
+              <img
+                id="flavor-product-truffle-rosemary"
+                className="flavor-product-image"
+                src="/assets/Flavour 4.jpg"
+                alt="SattvaMunch Truffle Rosemary roasted makhana 25g jar, 50g pouch, and 100g pouch"
+                referrerPolicy="no-referrer"
+                onError={(e) => {
+                  const target = e.currentTarget;
+                  const fallbacks = [
+                    '/Flavour 4.jpg',
+                    '/assets/flavour-4.jpg',
+                    '/flavour-4.jpg',
+                    '/attached_assets/Flavour 4.jpg',
+                  ];
+                  const currentSrc = decodeURIComponent(new URL(target.src, window.location.origin).pathname);
+                  const nextSrc = fallbacks.find((s) => s !== currentSrc);
+                  if (nextSrc && target.dataset.tried !== nextSrc) {
+                    target.dataset.tried = nextSrc;
+                    target.src = nextSrc;
+                  }
+                }}
+              />
+            )}
+            {!hasProductImage && (
+              <div className="flavor-seed" style={{ boxShadow: `14px 23px 22px ${flavor.color}30` }} />
+            )}
+            <span className="flavor-label" style={{ color: hasProductImage ? 'var(--warm-ivory)' : flavor.color }}>
+              {isSmokeAndPepper
+                ? '01 / Old Delhi heat, one honest crunch'
+                : isGoldenSesame
+                ? '02 / Kyoto calm, one toasted crunch'
+                : isPomRose
+                ? '03 / Beirut bright, one tangy crunch'
+                : isTruffleRosemary
+                ? '04 / Umbria quiet, one earthy crunch'
+                : `Flavor ${String(selected + 1).padStart(2, '0')} / India to everywhere`}
+            </span>
           </div>
           <div className="flavor-info">
             <div className="flavor-tabs" role="tablist" aria-label="Explore four flavors">
