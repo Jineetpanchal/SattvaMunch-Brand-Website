@@ -571,24 +571,172 @@ function Passport() {
 
 function CampaignCarousel() {
   const [slide, setSlide] = useState(0);
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const totalSlides = 7;
   const visible = 3;
-  const max = galleryAssets.length - visible;
+  const max = totalSlides - visible;
+
+  const isLightboxOpen = lightboxIndex !== null;
+
+  useEffect(() => {
+    if (!isLightboxOpen) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setLightboxIndex(null);
+      } else if (e.key === 'ArrowLeft') {
+        setLightboxIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev));
+      } else if (e.key === 'ArrowRight') {
+        setLightboxIndex((prev) => (prev !== null && prev < totalSlides - 1 ? prev + 1 : prev));
+      }
+    };
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isLightboxOpen, totalSlides]);
+
   return (
     <section className="campaign" id="carousel" aria-labelledby="campaign-title">
       <div className="wrap">
         <div className="campaign-head">
-          <div><span className="section-label">Campaign field notes</span><h2 className="display campaign-title" id="campaign-title">A snack with a <em>point of view.</em></h2></div>
+          <div>
+            <span className="section-label">Passport Pages</span>
+            <h2 className="display campaign-title" id="campaign-title">A snack with a <em>point of view.</em></h2>
+          </div>
           <div className="campaign-control">
-            <button type="button" className="carousel-button" aria-label="Previous slide" onClick={() => setSlide(Math.max(0, slide - 1))} data-testid="button-carousel-prev"><ChevronLeft size={18} /></button>
-            <button type="button" className="carousel-button" aria-label="Next slide" onClick={() => setSlide(Math.min(max, slide + 1))} data-testid="button-carousel-next"><ChevronRight size={18} /></button>
+            <button
+              type="button"
+              className="carousel-button"
+              aria-label="Previous slide"
+              disabled={slide === 0}
+              onClick={() => setSlide(Math.max(0, slide - 1))}
+              data-testid="button-carousel-prev"
+            >
+              <ChevronLeft size={18} />
+            </button>
+            <button
+              type="button"
+              className="carousel-button"
+              aria-label="Next slide"
+              disabled={slide >= max}
+              onClick={() => setSlide(Math.min(max, slide + 1))}
+              data-testid="button-carousel-next"
+            >
+              <ChevronRight size={18} />
+            </button>
           </div>
         </div>
         <div className="carousel-window">
           <div className="carousel-track" style={{ transform: `translateX(calc(-${slide} * (min(320px, 72vw) + 18px)))` }}>
-            {Array.from({ length: 7 }, (_, index) => <figure className="carousel-slide" key={index}><img src={`/assets/carousel-${index + 1}.png`} alt={`SattvaMunch campaign slide ${index + 1}`} /><figcaption className="campaign-meta"><span>Slide {String(index + 1).padStart(2, '0')}</span><span>The seed&apos;s passport</span></figcaption></figure>)}
+            {Array.from({ length: totalSlides }, (_, index) => (
+              <figure
+                className="carousel-slide clickable"
+                key={index}
+                onClick={() => setLightboxIndex(index)}
+                role="button"
+                tabIndex={0}
+                aria-label={`Open campaign slide ${index + 1} in fullscreen lightbox`}
+                onKeyDown={(e) => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setLightboxIndex(index);
+                  }
+                }}
+              >
+                <img
+                  src={`/assets/carousel-${index + 1}.png`}
+                  alt={`SattvaMunch campaign slide ${index + 1}`}
+                />
+                <figcaption className="campaign-meta">
+                  <span>Slide {String(index + 1).padStart(2, '0')}</span>
+                  <span>The seed&apos;s passport</span>
+                </figcaption>
+              </figure>
+            ))}
           </div>
         </div>
       </div>
+
+      {lightboxIndex !== null && (
+        <div
+          id="carousel-lightbox"
+          className="carousel-lightbox-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`Campaign slide ${lightboxIndex + 1} enlarged view`}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setLightboxIndex(null);
+            }
+          }}
+        >
+          <button
+            type="button"
+            id="carousel-lightbox-close"
+            className="carousel-lightbox-close"
+            aria-label="Close fullscreen view"
+            onClick={() => setLightboxIndex(null)}
+            data-testid="button-lightbox-close"
+          >
+            <X size={24} />
+          </button>
+
+          <div className="carousel-lightbox-stage" onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setLightboxIndex(null);
+            }
+          }}>
+            <div className="carousel-lightbox-content">
+              <img
+                src={`/assets/carousel-${lightboxIndex + 1}.png`}
+                alt={`SattvaMunch campaign slide ${lightboxIndex + 1} - fullscreen`}
+                className="carousel-lightbox-image"
+              />
+              <div className="carousel-lightbox-caption">
+                <span className="carousel-lightbox-counter">
+                  Slide {String(lightboxIndex + 1).padStart(2, '0')} / {String(totalSlides).padStart(2, '0')}
+                </span>
+                <span className="carousel-lightbox-subtitle">The seed&apos;s passport</span>
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            id="carousel-lightbox-prev"
+            className={`carousel-lightbox-nav prev ${lightboxIndex === 0 ? 'disabled' : ''}`}
+            aria-label="Previous slide"
+            disabled={lightboxIndex === 0}
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightboxIndex((prev) => (prev !== null && prev > 0 ? prev - 1 : prev));
+            }}
+            data-testid="button-lightbox-prev"
+          >
+            <ChevronLeft size={28} />
+          </button>
+
+          <button
+            type="button"
+            id="carousel-lightbox-next"
+            className={`carousel-lightbox-nav next ${lightboxIndex >= totalSlides - 1 ? 'disabled' : ''}`}
+            aria-label="Next slide"
+            disabled={lightboxIndex >= totalSlides - 1}
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightboxIndex((prev) => (prev !== null && prev < totalSlides - 1 ? prev + 1 : prev));
+            }}
+            data-testid="button-lightbox-next"
+          >
+            <ChevronRight size={28} />
+          </button>
+        </div>
+      )}
     </section>
   );
 }
@@ -625,10 +773,24 @@ function BrandFilm() {
     <section className="film" aria-labelledby="film-title">
       <div className="wrap film-card">
         <div className="film-card-content">
-          <span className="eyebrow">Coming soon · 01:24</span>
+          <span className="eyebrow">Now playing · 0:32</span>
           <h2 className="display" id="film-title">The sound of<br /><em>a good crunch.</em></h2>
           <p>A quiet film about wetlands, spice, and the small moment when a snack changes the direction of an afternoon.</p>
-          <button type="button" className="disabled-button" disabled data-testid="button-brand-film">Brand film in edit</button>
+          <div className="film-player-wrapper">
+            <video
+              id="brand-commercial-player"
+              className="film-video-player"
+              controls
+              playsInline
+              preload="metadata"
+              poster="/assets/commercial-poster.jpg"
+              aria-label="SattvaMunch Brand Commercial Film"
+            >
+              <source src="/assets/commercial.mp4" type="video/mp4" />
+              <source src="/assets/SattvaMunch-Commercial (1).mp4" type="video/mp4" />
+              Your browser does not support the video tag.
+            </video>
+          </div>
         </div>
       </div>
     </section>
