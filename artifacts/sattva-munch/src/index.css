@@ -132,14 +132,14 @@ button { cursor: pointer; }
 .hero-makhana-shadow {
   position: absolute;
   left: 50%;
-  top: 68%;
+  top: 76%;
   width: min(250px, 44vw);
-  height: 42px;
+  height: 38px;
   transform: translateX(-50%);
   border-radius: 50%;
-  background: radial-gradient(ellipse, rgba(59, 35, 20, 0.22) 0%, rgba(59, 35, 20, 0.1) 40%, rgba(59, 35, 20, 0) 72%);
-  filter: blur(12px);
-  opacity: 0.72;
+  background: radial-gradient(ellipse, rgba(59, 35, 20, 0.28) 0%, rgba(59, 35, 20, 0.12) 42%, rgba(59, 35, 20, 0) 74%);
+  filter: blur(11px);
+  opacity: 0.78;
   pointer-events: none;
   z-index: 0;
 }

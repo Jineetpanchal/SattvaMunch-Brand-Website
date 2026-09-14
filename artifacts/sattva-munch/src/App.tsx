@@ -87,53 +87,35 @@ function HeroCanvas() {
   return <canvas className="hero-canvas" ref={ref} aria-label="A gently orbiting seed and particle field" />;
 }
 
-const MAKHANA_MODEL_URL = '/models/sample.glb';
+const MAKHANA_MODEL_URL = '/makhana-real.glb';
 
 function RoastedMakhanaModel() {
   const { scene } = useGLTF(MAKHANA_MODEL_URL);
   const normalizedModel = useMemo(() => {
     const model = scene.clone(true);
 
-    // Prune the flat scanning base/slab embedded in the photogrammetry GLTF mesh
     model.traverse((child) => {
       if (!(child instanceof THREE.Mesh)) return;
-      const geom = child.geometry;
-      const pos = geom.attributes.position;
-      const idx = geom.index;
-      if (idx && pos) {
-        const newIndices: number[] = [];
-        for (let i = 0; i < idx.count; i += 3) {
-          const a = idx.getX(i);
-          const b = idx.getX(i + 1);
-          const c = idx.getX(i + 2);
-          const ya = pos.getY(a);
-          const yb = pos.getY(b);
-          const yc = pos.getY(c);
-          // Retain only triangles on the makhana seed (y > -0.075), discarding the flat 1x1 base slab
-          if (ya > -0.075 && yb > -0.075 && yc > -0.075) {
-            newIndices.push(a, b, c);
-          }
-        }
-        geom.setIndex(newIndices);
-        geom.computeVertexNormals();
-      }
-
       const materials = Array.isArray(child.material) ? child.material : [child.material];
       materials.forEach((material) => {
-        if (material instanceof THREE.MeshStandardMaterial) {
-          material.roughness = Math.max(material.roughness, 0.78);
+        if (material instanceof THREE.MeshStandardMaterial || material instanceof THREE.MeshPhysicalMaterial) {
+          material.roughness = Math.max(material.roughness, 0.82);
           material.metalness = 0;
-          material.envMapIntensity = 0.25;
+          if (material.map) {
+            material.map.anisotropy = 8;
+          }
         }
       });
-      child.castShadow = true;
-      child.receiveShadow = true;
+      child.castShadow = false;
+      child.receiveShadow = false;
     });
 
     const bounds = new THREE.Box3().setFromObject(model);
     const center = bounds.getCenter(new THREE.Vector3());
     const size = bounds.getSize(new THREE.Vector3());
-    const scale = 2.4 / Math.max(size.x, size.y, size.z);
+    const maxDim = Math.max(size.x, size.y, size.z);
+    // Scale to fill the dashed square marked area in the Hero section
+    const scale = 1.9 / maxDim;
 
     model.scale.setScalar(scale);
     model.position.set(-center.x * scale, -center.y * scale, -center.z * scale);
@@ -146,8 +128,8 @@ function RoastedMakhanaModel() {
 
 function ModelFallback() {
   return (
-    <mesh position={[0, 0.62, 0]} scale={[1.18, 0.84, 1]}>
-      <icosahedronGeometry args={[0.9, 2]} />
+    <mesh position={[0, 0, 0]} scale={[1, 0.8, 1]}>
+      <icosahedronGeometry args={[0.8, 2]} />
       <meshStandardMaterial color="#ead7b0" roughness={0.92} metalness={0} />
     </mesh>
   );
@@ -155,39 +137,15 @@ function ModelFallback() {
 
 function HeroModelScene() {
   const group = useRef<THREE.Group>(null);
-  const pointer = useRef({ x: 0, y: 0 });
 
-  useEffect(() => {
-    if (!window.matchMedia('(pointer: fine)').matches) return undefined;
-    const onPointerMove = (event: PointerEvent) => {
-      pointer.current.x = (event.clientX / window.innerWidth - 0.5) * 2;
-      pointer.current.y = (event.clientY / window.innerHeight - 0.5) * 2;
-    };
-    window.addEventListener('pointermove', onPointerMove, { passive: true });
-    return () => window.removeEventListener('pointermove', onPointerMove);
-  }, []);
-
-  useFrame(({ camera, clock }) => {
-    const elapsed = clock.getElapsedTime();
-    const entrance = Math.min(elapsed / 1.35, 1);
-    const easedEntrance = 1 - Math.pow(1 - entrance, 3);
-    camera.position.z = THREE.MathUtils.lerp(5.8, 4.25, easedEntrance);
-    camera.position.y = THREE.MathUtils.lerp(0.35, 0.16, easedEntrance);
-    camera.lookAt(0, 0.72, 0);
-
+  useFrame((_, delta) => {
     if (!group.current) return;
-    group.current.rotation.y = elapsed * 0.28;
-    group.current.rotation.x = THREE.MathUtils.lerp(
-      group.current.rotation.x,
-      Math.sin(elapsed * 0.55) * 0.035 - pointer.current.y * 0.045,
-      0.06,
-    );
-    group.current.rotation.z = THREE.MathUtils.lerp(group.current.rotation.z, pointer.current.x * 0.04, 0.06);
-    group.current.position.y = Math.sin(elapsed * 0.8) * 0.06;
+    // Continuous steady vertical (Y-axis) rotation at moderate, pleasant speed (~14s full revolution)
+    group.current.rotation.y += delta * 0.45;
   });
 
   return (
-    <group ref={group}>
+    <group ref={group} position={[0, 0, 0]} rotation={[0.08, 0, 0]}>
       <Suspense fallback={<ModelFallback />}>
         <RoastedMakhanaModel />
       </Suspense>
@@ -237,21 +195,18 @@ function HeroModelCanvas() {
     <div className="hero-model-canvas" aria-label="A slowly rotating roasted makhana 3D model">
       <span className="hero-makhana-shadow" aria-hidden="true" />
       <Canvas
-        camera={{ position: [0, 0.35, 5.8], fov: 28, near: 0.1, far: 20 }}
+        camera={{ position: [0, 0.1, 4.5], fov: 28, near: 0.1, far: 20 }}
         dpr={[1, 1.6]}
         gl={{ alpha: true, antialias: true, powerPreference: 'high-performance' }}
-        shadows
         fallback={<StaticMakhanaFallback />}
       >
-        <ambientLight intensity={1.5} color="#fff8ea" />
+        <ambientLight intensity={1.65} color="#fff8ea" />
         <directionalLight
-          castShadow
           color="#fff4dc"
-          intensity={2.1}
+          intensity={2.2}
           position={[-3.5, 5, 4]}
-          shadow-mapSize={[1024, 1024]}
         />
-        <directionalLight color="#e8b56b" intensity={0.28} position={[4, 1.5, -2]} />
+        <directionalLight color="#e8b56b" intensity={0.32} position={[4, 1.5, -2]} />
         <HeroModelScene />
       </Canvas>
     </div>
