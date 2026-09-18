@@ -753,12 +753,70 @@ function BrandFilm() {
 }
 
 function Deck() {
-  const investorDeck = 'https://docs.google.com/presentation/d/1CSgW7fO6mgjr5dXkSHlkvLTVAri0di_W/edit?usp=sharing&ouid=102832170138504550695&rtpof=true&sd=true';
+  const investorDeck = 'https://docs.google.com/presentation/d/1FJTmlE3JSV77hYbKxYTjpqqWvq1YjyoP/edit?usp=sharing&ouid=102832170138504550695&rtpof=true&sd=true';
+  const deckStats = [
+    { value: '$2.3B', label: "India's organic food market" },
+    { value: '19.3%', label: 'category CAGR through 2034' },
+    { value: '4', label: 'flavors, one certified-organic promise' },
+  ];
+
   return (
-    <section className="deck" aria-labelledby="deck-title">
+    <section className="deck" id="investors" aria-labelledby="deck-title">
       <div className="wrap deck-box">
-        <div><span className="eyebrow">For good people with good questions</span><h2 className="display" id="deck-title">Building the next<br /><em>honest snack.</em></h2></div>
-        <div><p>Our investor story is taking shape. Until then, come taste the point of view.</p><a className="button-dark" href={investorDeck} target="_blank" rel="noreferrer" data-testid="link-investor-deck">Open investor deck <ArrowUpRight size={14} /></a></div>
+        <div className="deck-main">
+          <span className="eyebrow">For good people with good questions</span>
+          <h2 className="display" id="deck-title">Building the next<br /><em>honest snack.</em></h2>
+          <p className="deck-lede">
+            Fifteen slides on the market, the model, and why now — the same honesty we put in the pack.
+          </p>
+
+          <div className="deck-stats" role="list" aria-label="Key market and brand metrics">
+            {deckStats.map((stat) => (
+              <div className="deck-stat-item" key={stat.value} role="listitem">
+                <span className="deck-stat-num">{stat.value}</span>
+                <span className="deck-stat-text">{stat.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        <div className="deck-showcase">
+          <a
+            className="deck-slide-card"
+            href={investorDeck}
+            target="_blank"
+            rel="noreferrer"
+            aria-label="Open SattvaMunch Investor Deck presentation in a new tab"
+          >
+            <div className="deck-card-sheet deck-card-back-2" aria-hidden="true" />
+            <div className="deck-card-sheet deck-card-back-1" aria-hidden="true" />
+            <div className="deck-card-sheet deck-card-front">
+              <div className="deck-slide-header">
+                <span className="deck-slide-badge">15 Slides</span>
+                <span className="deck-slide-confidential">Series Seed · Confidential</span>
+              </div>
+              <div className="deck-slide-content">
+                <span className="deck-slide-brand">SattvaMunch</span>
+                <h3 className="deck-slide-title">Building the Next<br /><em>Honest Snack.</em></h3>
+                <span className="deck-slide-sub">Market · Model · Category Growth</span>
+              </div>
+              <div className="deck-slide-footer">
+                <span>View Google Slides</span>
+                <ArrowUpRight size={13} />
+              </div>
+            </div>
+          </a>
+
+          <a
+            className="button-dark deck-cta"
+            href={investorDeck}
+            target="_blank"
+            rel="noreferrer"
+            data-testid="link-investor-deck"
+          >
+            Open investor deck <ArrowUpRight size={14} />
+          </a>
+        </div>
       </div>
     </section>
   );
