@@ -347,20 +347,38 @@ function Story() {
 
 function Chain() {
   const steps = [
-    ['01', 'The wetlands', 'Grown in India’s rich, slow-moving wetlands — where patience is part of the crop.', '○'],
-    ['02', 'The harvest', 'Hand-gathered, sun-dried, and selected for that unmistakable lightness.', '◌'],
-    ['03', 'The roast', 'Low and slow. Never fried. Every batch gets the time it deserves.', '◒'],
-    ['04', 'The journey', 'Finished with real spices and sent out into a much bigger world.', '↗'],
+    { title: 'The wetlands', copy: 'Grown in India’s rich, slow-moving wetlands — where patience is part of the crop.' },
+    { title: 'The harvest', copy: 'Hand-gathered, sun-dried, and selected for that unmistakable lightness.' },
+    { title: 'The roast', copy: 'Low and slow. Never fried. Every batch gets the time it deserves.' },
+    { title: 'The journey', copy: 'Finished with real spices and sent out into a much bigger world.' },
   ];
   return (
     <section className="chain" aria-labelledby="chain-title">
-      <div className="wrap">
-        <div className="chain-head">
-          <div><span className="eyebrow">From soil to story</span><h2 className="display chain-title" id="chain-title">Good snacks have a <em>longer</em> story.</h2></div>
-          <p className="chain-intro">Our full-chain difference starts with respect for the seed — and ends with a crunch you can feel good about.</p>
+      <div className="chain-layout">
+        <div className="chain-strip" aria-hidden="true">
+          <img
+            src="/assets/gallery-02-product-hero.png"
+            alt=""
+            className="chain-strip-img"
+            loading="lazy"
+          />
         </div>
-        <div className="chain-row">
-          {steps.map(([number, title, copy, glyph]) => <article className="chain-step" key={number}><span className="chain-number">{number}</span><span className="chain-glyph">{glyph}</span><h3>{title}</h3><p>{copy}</p></article>)}
+        <div className="chain-content">
+          <div className="chain-head">
+            <div>
+              <span className="eyebrow">From soil to story</span>
+              <h2 className="display chain-title" id="chain-title">Good snacks have a <em>longer</em> story.</h2>
+            </div>
+            <p className="chain-intro">Our full-chain difference starts with respect for the seed — and ends with a crunch you can feel good about.</p>
+          </div>
+          <div className="chain-row">
+            {steps.map((step) => (
+              <article className="chain-step" key={step.title}>
+                <h3>{step.title}</h3>
+                <p>{step.copy}</p>
+              </article>
+            ))}
+          </div>
         </div>
       </div>
     </section>
@@ -517,19 +535,31 @@ function FlavorExplorer() {
 function Passport() {
   return (
     <section className="passport" id="passport" aria-labelledby="passport-title">
-      <div className="wrap passport-grid">
-        <div>
-          <span className="eyebrow">The Seed&apos;s Passport</span>
-          <h2 className="display passport-title" id="passport-title">One seed.<br /><em>Four worlds.</em></h2>
-          <p className="passport-copy">What if your next snack had a passport? We kept the makhana rooted in India — and let the flavor travel. A campaign for curious eaters and small, joyful departures.</p>
-          <div className="passport-links">
-            <a className="passport-link" href={docs[1].href} target="_blank" rel="noreferrer" data-testid="link-passport-campaign">See campaign <ArrowUpRight size={13} /></a>
-            <button type="button" className="passport-link" onClick={() => scrollToId('carousel')} data-testid="button-passport-slides">Browse the slides <ArrowRight size={13} /></button>
-          </div>
+      <div className="passport-layout">
+        <div className="passport-strip" aria-hidden="true">
+          <img
+            src="/assets/gallery-05-product-detail.png"
+            alt=""
+            className="passport-strip-img"
+            loading="lazy"
+          />
         </div>
-        <div className="passport-art" aria-hidden="true">
-          <div className="passport-card"><span className="display">The seed<br /><em>has places<br />to be.</em></span><div className="passport-card-bottom"><span>SV / 001</span><span>India → everywhere</span></div></div>
-          <div className="passport-orbit" />
+        <div className="passport-content">
+          <div className="passport-grid">
+            <div>
+              <span className="eyebrow">The Seed&apos;s Passport</span>
+              <h2 className="display passport-title" id="passport-title">One seed.<br /><em>Four worlds.</em></h2>
+              <p className="passport-copy">What if your next snack had a passport? We kept the makhana rooted in India — and let the flavor travel. A campaign for curious eaters and small, joyful departures.</p>
+              <div className="passport-links">
+                <a className="passport-link" href={docs[1].href} target="_blank" rel="noreferrer" data-testid="link-passport-campaign">See campaign <ArrowUpRight size={13} /></a>
+                <button type="button" className="passport-link" onClick={() => scrollToId('carousel')} data-testid="button-passport-slides">Browse the slides <ArrowRight size={13} /></button>
+              </div>
+            </div>
+            <div className="passport-art" aria-hidden="true">
+              <div className="passport-card"><span className="display">The seed<br /><em>has places<br />to be.</em></span><div className="passport-card-bottom"><span>SV / 001</span><span>India → everywhere</span></div></div>
+              <div className="passport-orbit" />
+            </div>
+          </div>
         </div>
       </div>
     </section>
