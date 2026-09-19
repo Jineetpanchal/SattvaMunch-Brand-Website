@@ -2,7 +2,7 @@ import { Suspense, useEffect, useMemo, useRef, useState, type FormEvent } from '
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
-import { ArrowDown, ArrowRight, ArrowUpRight, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
+import { ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
 import * as THREE from 'three';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
@@ -23,12 +23,24 @@ const flavors = [
   { name: 'Truffle Rosemary', origin: 'Italy-inspired', color: '#5c6b4e', copy: 'Truffle, roasted garlic and rosemary. Earthy, savoury and made for long evenings.', note: 'Quiet luxury, one crisp bite at a time.' },
 ];
 
-const galleryAssets = [
-  'carousel-1.png', 'carousel-2.png', 'carousel-3.png', 'carousel-4.png', 'carousel-5.png',
-  'carousel-6.png', 'carousel-7.png', 'logo-mark.png', 'carousel-5.png', 'carousel-4.png',
-];
+interface GalleryItem {
+  title: string;
+  subtitle?: string;
+  src?: string;
+}
 
-const galleryCaptions = ['The passport', 'Not boring', 'Rooted in India', 'One seed, four worlds', 'Nourishing, never boring', 'Healthy, with feeling', 'Four flavors', 'The mark', 'Clean ingredients', 'The full journey'];
+const galleryItems: GalleryItem[] = [
+  { title: 'Brand Hero', src: '/assets/gallery-01-brand-hero.png' },
+  { title: 'Product Hero', src: '/assets/gallery-02-product-hero.png' },
+  { title: 'Signature Campaign Poster', src: '/assets/gallery-03-campaign-poster.png' },
+  { title: 'Lifestyle Visual', src: '/assets/gallery-04-lifestyle.png' },
+  { title: 'Product Detail', src: '/assets/gallery-05-product-detail.png' },
+  { title: 'Social Advertisement', src: '/assets/gallery-06-social-ad.png' },
+  { title: 'Website Hero', src: '/assets/gallery-07-website-hero.png' },
+  { title: 'Investor Pitch-Deck Hero', subtitle: 'Alternate Packaging Concept', src: '/assets/gallery-08-investor-hero.png' },
+  { title: '3D Product Render', src: '/assets/gallery-09-3d-render.png' },
+  { title: 'Campaign Key Visual', src: '/assets/gallery-10-campaign-key-visual.png' },
+];
 
 function scrollToId(id: string) {
   document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
@@ -710,15 +722,167 @@ function Documents() {
 }
 
 function VisualGallery() {
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+
+  const isLightboxOpen = lightboxIndex !== null;
+  const totalItems = galleryItems.length;
+
+  useEffect(() => {
+    if (!isLightboxOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setLightboxIndex(null);
+      } else if (e.key === 'ArrowLeft') {
+        setLightboxIndex((prev) => (prev !== null ? (prev - 1 + totalItems) % totalItems : 0));
+      } else if (e.key === 'ArrowRight') {
+        setLightboxIndex((prev) => (prev !== null ? (prev + 1) % totalItems : 0));
+      }
+    };
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    window.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+      window.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [isLightboxOpen, totalItems]);
+
+  const currentItem = lightboxIndex !== null ? galleryItems[lightboxIndex] : null;
+
   return (
     <section className="showcase" aria-labelledby="gallery-title">
       <div className="wrap">
         <span className="section-label">Visual gallery</span>
         <h2 className="display" id="gallery-title" style={{ fontSize: 'clamp(44px, 5vw, 70px)', lineHeight: '.92', margin: '18px 0 0' }}>A little texture<br /><em>goes a long way.</em></h2>
         <div className="showcase-grid">
-          {galleryAssets.map((asset, index) => <figure className="gallery-cell" key={`${asset}-${index}`}><img src={`/assets/${asset}`} alt={galleryCaptions[index]} loading="lazy" /><figcaption>{galleryCaptions[index]}</figcaption></figure>)}
+          {galleryItems.map((item, index) => (
+            <figure
+              className={`gallery-cell clickable ${!item.src ? 'gallery-cell-placeholder' : ''}`}
+              key={`${item.title}-${index}`}
+              onClick={() => setLightboxIndex(index)}
+              role="button"
+              tabIndex={0}
+              aria-label={`Open ${item.title} in fullscreen lightbox`}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  setLightboxIndex(index);
+                }
+              }}
+              data-testid={`gallery-cell-${index}`}
+            >
+              {item.src ? (
+                <img
+                  src={item.src}
+                  alt={item.title}
+                  loading="lazy"
+                />
+              ) : (
+                <div className="gallery-placeholder-inner" aria-hidden="true">
+                  <span className="gallery-placeholder-tag">In Production</span>
+                </div>
+              )}
+              <figcaption>
+                <span className="gallery-caption-title">{item.title}</span>
+                {item.subtitle && <span className="gallery-cell-sub">{item.subtitle}</span>}
+              </figcaption>
+            </figure>
+          ))}
         </div>
       </div>
+
+      {lightboxIndex !== null && currentItem && (
+        <div
+          id="gallery-lightbox"
+          className="carousel-lightbox-overlay"
+          role="dialog"
+          aria-modal="true"
+          aria-label={`${currentItem.title} fullscreen view`}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) {
+              setLightboxIndex(null);
+            }
+          }}
+          data-testid="gallery-lightbox-overlay"
+        >
+          <button
+            type="button"
+            id="gallery-lightbox-close"
+            className="carousel-lightbox-close"
+            aria-label="Close fullscreen view"
+            onClick={() => setLightboxIndex(null)}
+            data-testid="button-gallery-lightbox-close"
+          >
+            <X size={24} />
+          </button>
+
+          <div
+            className="carousel-lightbox-stage gallery-lightbox-stage"
+            onClick={(e) => {
+              if (e.target === e.currentTarget) {
+                setLightboxIndex(null);
+              }
+            }}
+          >
+            <div className="gallery-lightbox-content">
+              {currentItem.src ? (
+                <img
+                  src={currentItem.src}
+                  alt={currentItem.title}
+                  className="gallery-lightbox-image"
+                />
+              ) : (
+                <div className="gallery-lightbox-placeholder">
+                  <span className="gallery-lightbox-placeholder-tag">Asset In Production</span>
+                  <p className="gallery-lightbox-placeholder-hint">Visual asset is currently being prepared for the brand archive.</p>
+                </div>
+              )}
+              <div className="gallery-lightbox-caption">
+                <div className="gallery-lightbox-info">
+                  <span className="gallery-lightbox-title">{currentItem.title}</span>
+                  {currentItem.subtitle && (
+                    <span className="gallery-lightbox-subtitle">{currentItem.subtitle}</span>
+                  )}
+                </div>
+                <span className="gallery-lightbox-counter">
+                  {String(lightboxIndex + 1).padStart(2, '0')} / {String(totalItems).padStart(2, '0')}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            id="gallery-lightbox-prev"
+            className="carousel-lightbox-nav prev"
+            aria-label="Previous image"
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightboxIndex((prev) => (prev !== null ? (prev - 1 + totalItems) % totalItems : 0));
+            }}
+            data-testid="button-gallery-lightbox-prev"
+          >
+            <ChevronLeft size={28} />
+          </button>
+
+          <button
+            type="button"
+            id="gallery-lightbox-next"
+            className="carousel-lightbox-nav next"
+            aria-label="Next image"
+            onClick={(e) => {
+              e.stopPropagation();
+              setLightboxIndex((prev) => (prev !== null ? (prev + 1) % totalItems : 0));
+            }}
+            data-testid="button-gallery-lightbox-next"
+          >
+            <ChevronRight size={28} />
+          </button>
+        </div>
+      )}
     </section>
   );
 }
@@ -839,7 +1003,28 @@ function Footer() {
       <div className="wrap footer-grid">
         <div><img className="footer-logo" src="/assets/logo-landscape.png" alt="SattvaMunch" /><p className="footer-tagline">Ancient grain, modern palate.<br />A little more wonder in every handful.</p></div>
         <div><h3>Explore</h3><nav className="footer-links" aria-label="Footer navigation"><button type="button" onClick={() => scrollToId('story')} data-testid="link-footer-grain">The grain</button><button type="button" onClick={() => scrollToId('flavors')} data-testid="link-footer-flavors">Flavors</button><button type="button" onClick={() => scrollToId('passport')} data-testid="link-footer-passport">The Seed&apos;s Passport</button><button type="button" onClick={() => scrollToId('documents')} data-testid="link-footer-studio">Open studio</button></nav></div>
-        <div><h3>Stay curious</h3><p style={{ color: 'rgba(245,239,224,.67)', fontSize: 14, margin: '0 0 12px', maxWidth: 260 }}>Occasional notes from the road. No noise, just good things to crunch on.</p><form className="newsletter" onSubmit={submit}><input aria-label="Email address" type="email" placeholder="Your email address" value={email} onChange={(event) => setEmail(event.target.value)} data-testid="input-newsletter-email" /><button aria-label="Join the list" type="submit" data-testid="button-newsletter-submit"><ArrowRight size={17} /></button></form><div className="newsletter-status" aria-live="polite">{status}</div></div>
+        <div>
+          <h3>Stay curious</h3>
+          <p style={{ color: 'rgba(245,239,224,.67)', fontSize: 14, margin: '0 0 12px', maxWidth: 260 }}>Occasional notes from the road. No noise, just good things to crunch on.</p>
+          <form className="newsletter" onSubmit={submit}>
+            <input aria-label="Email address" type="email" placeholder="Your email address" value={email} onChange={(event) => setEmail(event.target.value)} data-testid="input-newsletter-email" />
+            <button aria-label="Join the list" type="submit" data-testid="button-newsletter-submit"><ArrowRight size={17} /></button>
+          </form>
+          <div className="newsletter-status" aria-live="polite">{status}</div>
+          <button
+            type="button"
+            className="footer-back-to-top"
+            onClick={() => {
+              scrollToId('top');
+              window.scrollTo({ top: 0, behavior: 'smooth' });
+            }}
+            aria-label="Back to home"
+            data-testid="button-footer-back-to-top"
+          >
+            <span>Back to home</span>
+            <ArrowUp size={14} />
+          </button>
+        </div>
       </div>
       <div className="wrap footer-bottom"><span>© 2025 SattvaMunch Foods</span><span>100% certified organic · Made in India · Made for everywhere</span></div>
     </footer>
