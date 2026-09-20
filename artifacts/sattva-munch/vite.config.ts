@@ -61,14 +61,17 @@ export default defineConfig({
             }
           }
 
-          const match = decodedUrl.match(/(?:flavour|flavor)[ -_]?(\d+)/i);
+          const match = decodedUrl.match(/(?:flavour|flavor)[ -_]?(\d+)|f-(\d+)/i);
           if (match) {
-            const num = match[1];
+            const num = match[1] || match[2];
             const possiblePaths = [
+              path.resolve(import.meta.dirname, `public/assets/F-${num}.png`),
+              path.resolve(import.meta.dirname, `public/assets/f-${num}.png`),
               path.resolve(import.meta.dirname, `public/assets/Flavour ${num}.jpg`),
               path.resolve(import.meta.dirname, `public/assets/flavour-${num}.jpg`),
               path.resolve(import.meta.dirname, `public/assets/flavor-${num}.jpg`),
               path.resolve(import.meta.dirname, `public/assets/Flavour-${num}.jpg`),
+              path.resolve(import.meta.dirname, `../../attached_assets/F-${num}.png`),
               path.resolve(import.meta.dirname, `../../attached_assets/Flavour ${num}.jpg`),
               path.resolve(import.meta.dirname, `../../attached_assets/flavour-${num}.jpg`),
               path.resolve(import.meta.dirname, `../../attached_assets/Flavour_${num}.jpg`),
@@ -79,7 +82,7 @@ export default defineConfig({
             ];
             for (const file of possiblePaths) {
               if (fs.existsSync(file) && fs.statSync(file).isFile()) {
-                res.setHeader('Content-Type', 'image/jpeg');
+                res.setHeader('Content-Type', file.endsWith('.png') ? 'image/png' : 'image/jpeg');
                 fs.createReadStream(file).pipe(res);
                 return;
               }

@@ -228,33 +228,76 @@ function HeroModelCanvas() {
 function Nav() {
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 28);
     window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
+
+  useEffect(() => {
+    if (!open) return;
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setOpen(false);
+        scrollToId('top');
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [open]);
+
   const go = (id: string) => {
     setOpen(false);
     scrollToId(id);
   };
+
   return (
-    <header className={`site-nav ${scrolled ? 'scrolled' : ''}`}>
-      <div className="wrap nav-inner">
-        <button type="button" className="nav-logo-button" onClick={() => go('top')} aria-label="Back to top" data-testid="button-nav-home">
-          <img className="nav-logo" src="/assets/logo-landscape.png" alt="SattvaMunch — ancient grain, modern palate" />
-        </button>
-        <nav className={`nav-links ${open ? 'mobile-open' : ''}`} aria-label="Primary navigation">
-          <button type="button" className="nav-link" onClick={() => go('story')} data-testid="link-nav-story">The grain</button>
-          <button type="button" className="nav-link" onClick={() => go('flavors')} data-testid="link-nav-flavors">Flavors</button>
-          <button type="button" className="nav-link" onClick={() => go('passport')} data-testid="link-nav-passport">Passport</button>
-          <button type="button" className="nav-link" onClick={() => go('documents')} data-testid="link-nav-studio">Studio</button>
-        </nav>
-        <button type="button" className="nav-cta" onClick={() => go('flavors')} data-testid="button-nav-explore">Explore flavors <ArrowRight size={14} /></button>
-        <button type="button" className="menu-btn" onClick={() => setOpen(!open)} aria-label="Toggle navigation" data-testid="button-nav-menu">
-          {open ? <X size={18} /> : <Menu size={18} />}
-        </button>
-      </div>
-    </header>
+    <>
+      <header
+        className={`site-nav ${scrolled ? 'scrolled' : ''}`}
+        onClick={(e) => {
+          if (open && (e.target === e.currentTarget || (e.target as HTMLElement).classList.contains('nav-inner'))) {
+            setOpen(false);
+            scrollToId('top');
+          }
+        }}
+      >
+        <div className="wrap nav-inner">
+          <button type="button" className="nav-logo-button" onClick={() => go('top')} aria-label="Back to top" data-testid="button-nav-home">
+            <img className="nav-logo" src="/assets/logo-landscape.png" alt="SattvaMunch — ancient grain, modern palate" />
+          </button>
+          <nav className={`nav-links ${open ? 'mobile-open' : ''}`} id="primary-navigation" aria-label="Primary navigation">
+            <button type="button" className="nav-link" onClick={() => go('story')} data-testid="link-nav-story">The Grain</button>
+            <button type="button" className="nav-link" onClick={() => go('flavors')} data-testid="link-nav-flavors">Flavours</button>
+            <button type="button" className="nav-link" onClick={() => go('passport')} data-testid="link-nav-passport">Passport</button>
+            <button type="button" className="nav-link" onClick={() => go('documents')} data-testid="link-nav-studio">Studio</button>
+          </nav>
+          <button type="button" className="nav-cta" onClick={() => go('flavors')} data-testid="button-nav-explore">Explore flavors <ArrowRight size={14} /></button>
+          <button
+            type="button"
+            className="menu-btn"
+            onClick={() => setOpen(!open)}
+            aria-label={open ? 'Close options menu' : 'Open options menu'}
+            aria-expanded={open}
+            aria-controls="primary-navigation"
+            data-testid="button-nav-menu"
+          >
+            {open ? <X size={20} /> : <Menu size={20} />}
+          </button>
+        </div>
+      </header>
+      {open && (
+        <div
+          className="mobile-nav-backdrop"
+          onClick={() => {
+            setOpen(false);
+            scrollToId('top');
+          }}
+          aria-hidden="true"
+        />
+      )}
+    </>
   );
 }
 
@@ -277,7 +320,6 @@ function Hero() {
           <div className="hero-orbit" aria-hidden="true">
             <span className="orbit-dot dot-a" /><span className="orbit-dot dot-b" /><span className="orbit-dot dot-c" />
           </div>
-          <div className="hero-stamp">100%<br />certified<br />organic</div>
           <p className="hero-note">One Indian seed.<br />A world of appetite.</p>
         </div>
       </div>
@@ -410,16 +452,15 @@ function FlavorExplorer() {
               <img
                 id="flavor-product-smoke-pepper"
                 className="flavor-product-image"
-                src="/assets/Flavour 1.jpg"
+                src="/assets/F-1.png"
                 alt="SattvaMunch Smoke & Pepper roasted makhana 25g jar, 50g pouch, and 100g pouch"
                 referrerPolicy="no-referrer"
                 onError={(e) => {
                   const target = e.currentTarget;
                   const fallbacks = [
-                    '/Flavour 1.jpg',
-                    '/assets/flavour-1.jpg',
-                    '/flavour-1.jpg',
-                    '/attached_assets/Flavour 1.jpg',
+                    '/F-1.png',
+                    '/assets/F-1.png',
+                    '/attached_assets/F-1.png',
                   ];
                   const currentSrc = decodeURIComponent(new URL(target.src, window.location.origin).pathname);
                   const nextSrc = fallbacks.find((s) => s !== currentSrc);
@@ -434,16 +475,15 @@ function FlavorExplorer() {
               <img
                 id="flavor-product-golden-sesame"
                 className="flavor-product-image"
-                src="/assets/Flavour 2.jpg"
+                src="/assets/F-2.png"
                 alt="SattvaMunch Golden Sesame roasted makhana 25g jar, 50g pouch, and 100g pouch"
                 referrerPolicy="no-referrer"
                 onError={(e) => {
                   const target = e.currentTarget;
                   const fallbacks = [
-                    '/Flavour 2.jpg',
-                    '/assets/flavour-2.jpg',
-                    '/flavour-2.jpg',
-                    '/attached_assets/Flavour 2.jpg',
+                    '/F-2.png',
+                    '/assets/F-2.png',
+                    '/attached_assets/F-2.png',
                   ];
                   const currentSrc = decodeURIComponent(new URL(target.src, window.location.origin).pathname);
                   const nextSrc = fallbacks.find((s) => s !== currentSrc);
@@ -458,16 +498,15 @@ function FlavorExplorer() {
               <img
                 id="flavor-product-pom-rose"
                 className="flavor-product-image"
-                src="/assets/Flavour 3.jpg"
+                src="/assets/F-3.png"
                 alt="SattvaMunch Pom Rose roasted makhana 25g jar, 50g pouch, and 100g pouch"
                 referrerPolicy="no-referrer"
                 onError={(e) => {
                   const target = e.currentTarget;
                   const fallbacks = [
-                    '/Flavour 3.jpg',
-                    '/assets/flavour-3.jpg',
-                    '/flavour-3.jpg',
-                    '/attached_assets/Flavour 3.jpg',
+                    '/F-3.png',
+                    '/assets/F-3.png',
+                    '/attached_assets/F-3.png',
                   ];
                   const currentSrc = decodeURIComponent(new URL(target.src, window.location.origin).pathname);
                   const nextSrc = fallbacks.find((s) => s !== currentSrc);
@@ -482,16 +521,15 @@ function FlavorExplorer() {
               <img
                 id="flavor-product-truffle-rosemary"
                 className="flavor-product-image"
-                src="/assets/Flavour 4.jpg"
+                src="/assets/F-4.png"
                 alt="SattvaMunch Truffle Rosemary roasted makhana 25g jar, 50g pouch, and 100g pouch"
                 referrerPolicy="no-referrer"
                 onError={(e) => {
                   const target = e.currentTarget;
                   const fallbacks = [
-                    '/Flavour 4.jpg',
-                    '/assets/flavour-4.jpg',
-                    '/flavour-4.jpg',
-                    '/attached_assets/Flavour 4.jpg',
+                    '/F-4.png',
+                    '/assets/F-4.png',
+                    '/attached_assets/F-4.png',
                   ];
                   const currentSrc = decodeURIComponent(new URL(target.src, window.location.origin).pathname);
                   const nextSrc = fallbacks.find((s) => s !== currentSrc);
@@ -569,11 +607,208 @@ function Passport() {
 function CampaignCarousel() {
   const [slide, setSlide] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const [reducedMotion, setReducedMotion] = useState(false);
+
+  const trackRef = useRef<HTMLDivElement>(null);
+  const offsetRef = useRef(0);
+  const isHoveredRef = useRef(false);
+  const isLightboxOpenRef = useRef(false);
+  const isManualInteractingRef = useRef(false);
+  const manualTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const rafIdRef = useRef<number | null>(null);
+  const lastTimeRef = useRef<number | null>(null);
+
   const totalSlides = 7;
   const visible = 3;
   const max = totalSlides - visible;
 
   const isLightboxOpen = lightboxIndex !== null;
+
+  // Listen for reduced motion preference
+  useEffect(() => {
+    const mq = window.matchMedia('(prefers-reduced-motion: reduce)');
+    setReducedMotion(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setReducedMotion(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
+  // Sync lightbox open state to ref for animation loop
+  useEffect(() => {
+    isLightboxOpenRef.current = isLightboxOpen;
+  }, [isLightboxOpen]);
+
+  // Measure slide step and single set width dynamically
+  const getMetrics = () => {
+    if (!trackRef.current) return { slideStep: 338, singleSetWidth: 338 * totalSlides };
+    const firstSlide = trackRef.current.querySelector('.carousel-slide') as HTMLElement;
+    const slideWidth = firstSlide ? firstSlide.getBoundingClientRect().width : 320;
+    const style = window.getComputedStyle(trackRef.current);
+    const gap = parseFloat(style.gap) || 18;
+    const slideStep = slideWidth + gap;
+    return { slideStep, singleSetWidth: slideStep * totalSlides };
+  };
+
+  // Initialize offset at set 1 (middle duplicate set) for seamless infinite scrolling in both directions
+  useEffect(() => {
+    if (reducedMotion || !trackRef.current) return;
+    const { singleSetWidth } = getMetrics();
+    if (singleSetWidth > 0) {
+      offsetRef.current = singleSetWidth;
+      trackRef.current.style.transition = 'none';
+      trackRef.current.style.transform = `translate3d(-${offsetRef.current}px, 0, 0)`;
+    }
+  }, [reducedMotion]);
+
+  // Handle window resize gracefully
+  useEffect(() => {
+    const handleResize = () => {
+      if (reducedMotion || !trackRef.current) return;
+      const { singleSetWidth } = getMetrics();
+      if (singleSetWidth > 0) {
+        while (offsetRef.current < singleSetWidth) {
+          offsetRef.current += singleSetWidth;
+        }
+        while (offsetRef.current >= 2 * singleSetWidth) {
+          offsetRef.current -= singleSetWidth;
+        }
+        trackRef.current.style.transform = `translate3d(-${offsetRef.current}px, 0, 0)`;
+      }
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [reducedMotion]);
+
+  // Continuous passive auto-scroll marquee loop
+  useEffect(() => {
+    if (reducedMotion) return;
+
+    const animate = (time: number) => {
+      if (lastTimeRef.current !== null) {
+        const delta = Math.min(time - lastTimeRef.current, 100);
+        const pixelsPerMs = 0.04; // ~40px per second - gentle, calm passive drift
+
+        if (
+          !isHoveredRef.current &&
+          !isLightboxOpenRef.current &&
+          !isManualInteractingRef.current &&
+          trackRef.current
+        ) {
+          const { singleSetWidth } = getMetrics();
+          if (singleSetWidth > 0) {
+            if (offsetRef.current === 0) {
+              offsetRef.current = singleSetWidth;
+            }
+            offsetRef.current += pixelsPerMs * delta;
+
+            // Seamless infinite loop: wrap cleanly back to set 1
+            if (offsetRef.current >= 2 * singleSetWidth) {
+              offsetRef.current -= singleSetWidth;
+            }
+
+            trackRef.current.style.transform = `translate3d(-${offsetRef.current}px, 0, 0)`;
+          }
+        }
+      }
+
+      lastTimeRef.current = time;
+      rafIdRef.current = requestAnimationFrame(animate);
+    };
+
+    lastTimeRef.current = null;
+    rafIdRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (rafIdRef.current) cancelAnimationFrame(rafIdRef.current);
+      if (manualTimerRef.current) clearTimeout(manualTimerRef.current);
+    };
+  }, [reducedMotion]);
+
+  // Hover handlers for stopping motion immediately
+  const handleMouseEnter = () => {
+    isHoveredRef.current = true;
+  };
+  const handleMouseLeave = () => {
+    isHoveredRef.current = false;
+  };
+  const handleTouchStart = () => {
+    isHoveredRef.current = true;
+  };
+  const handleTouchEnd = () => {
+    if (manualTimerRef.current) clearTimeout(manualTimerRef.current);
+    manualTimerRef.current = setTimeout(() => {
+      isHoveredRef.current = false;
+    }, 2000);
+  };
+
+  // Manual next button: snaps forward by 1 slide and temporarily pauses auto-drift for 4 seconds
+  const handleNext = () => {
+    if (reducedMotion) {
+      setSlide((prev) => Math.min(max, prev + 1));
+      return;
+    }
+    isManualInteractingRef.current = true;
+    if (manualTimerRef.current) clearTimeout(manualTimerRef.current);
+
+    const { slideStep, singleSetWidth } = getMetrics();
+    if (!trackRef.current || slideStep === 0) return;
+
+    const currentSlideIndex = Math.floor(offsetRef.current / slideStep);
+    const targetOffset = (currentSlideIndex + 1) * slideStep;
+
+    trackRef.current.style.transition = 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)';
+    trackRef.current.style.transform = `translate3d(-${targetOffset}px, 0, 0)`;
+    offsetRef.current = targetOffset;
+
+    setTimeout(() => {
+      if (!trackRef.current) return;
+      trackRef.current.style.transition = 'none';
+      if (offsetRef.current >= 2 * singleSetWidth) {
+        offsetRef.current -= singleSetWidth;
+        trackRef.current.style.transform = `translate3d(-${offsetRef.current}px, 0, 0)`;
+      }
+    }, 500);
+
+    manualTimerRef.current = setTimeout(() => {
+      isManualInteractingRef.current = false;
+    }, 4000);
+  };
+
+  // Manual prev button: snaps backward by 1 slide and temporarily pauses auto-drift for 4 seconds
+  const handlePrev = () => {
+    if (reducedMotion) {
+      setSlide((prev) => Math.max(0, prev - 1));
+      return;
+    }
+    isManualInteractingRef.current = true;
+    if (manualTimerRef.current) clearTimeout(manualTimerRef.current);
+
+    const { slideStep, singleSetWidth } = getMetrics();
+    if (!trackRef.current || slideStep === 0) return;
+
+    if (offsetRef.current < singleSetWidth) {
+      offsetRef.current += singleSetWidth;
+      trackRef.current.style.transition = 'none';
+      trackRef.current.style.transform = `translate3d(-${offsetRef.current}px, 0, 0)`;
+      void trackRef.current.offsetWidth;
+    }
+
+    const currentSlideIndex = Math.ceil(offsetRef.current / slideStep);
+    const targetOffset = (currentSlideIndex - 1) * slideStep;
+
+    trackRef.current.style.transition = 'transform 0.5s cubic-bezier(0.2, 0.8, 0.2, 1)';
+    trackRef.current.style.transform = `translate3d(-${targetOffset}px, 0, 0)`;
+    offsetRef.current = targetOffset;
+
+    setTimeout(() => {
+      if (!trackRef.current) return;
+      trackRef.current.style.transition = 'none';
+    }, 500);
+
+    manualTimerRef.current = setTimeout(() => {
+      isManualInteractingRef.current = false;
+    }, 4000);
+  };
 
   useEffect(() => {
     if (!isLightboxOpen) return;
@@ -597,6 +832,8 @@ function CampaignCarousel() {
     };
   }, [isLightboxOpen, totalSlides]);
 
+  const slideCount = reducedMotion ? totalSlides : totalSlides * 3;
+
   return (
     <section className="campaign" id="carousel" aria-labelledby="campaign-title">
       <div className="wrap">
@@ -605,13 +842,17 @@ function CampaignCarousel() {
             <span className="section-label">Passport Pages</span>
             <h2 className="display campaign-title" id="campaign-title">A snack with a <em>point of view.</em></h2>
           </div>
-          <div className="campaign-control">
+          <div
+            className="campaign-control"
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+          >
             <button
               type="button"
               className="carousel-button"
               aria-label="Previous slide"
-              disabled={slide === 0}
-              onClick={() => setSlide(Math.max(0, slide - 1))}
+              disabled={reducedMotion ? slide === 0 : false}
+              onClick={handlePrev}
               data-testid="button-carousel-prev"
             >
               <ChevronLeft size={18} />
@@ -620,41 +861,57 @@ function CampaignCarousel() {
               type="button"
               className="carousel-button"
               aria-label="Next slide"
-              disabled={slide >= max}
-              onClick={() => setSlide(Math.min(max, slide + 1))}
+              disabled={reducedMotion ? slide >= max : false}
+              onClick={handleNext}
               data-testid="button-carousel-next"
             >
               <ChevronRight size={18} />
             </button>
           </div>
         </div>
-        <div className="carousel-window">
-          <div className="carousel-track" style={{ transform: `translateX(calc(-${slide} * (min(320px, 72vw) + 18px)))` }}>
-            {Array.from({ length: totalSlides }, (_, index) => (
-              <figure
-                className="carousel-slide clickable"
-                key={index}
-                onClick={() => setLightboxIndex(index)}
-                role="button"
-                tabIndex={0}
-                aria-label={`Open campaign slide ${index + 1} in fullscreen lightbox`}
-                onKeyDown={(e) => {
-                  if (e.key === 'Enter' || e.key === ' ') {
-                    e.preventDefault();
-                    setLightboxIndex(index);
-                  }
-                }}
-              >
-                <img
-                  src={`/assets/carousel-${index + 1}.png`}
-                  alt={`SattvaMunch campaign slide ${index + 1}`}
-                />
-                <figcaption className="campaign-meta">
-                  <span>Slide {String(index + 1).padStart(2, '0')}</span>
-                  <span>The seed&apos;s passport</span>
-                </figcaption>
-              </figure>
-            ))}
+        <div
+          className="carousel-window"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          onTouchStart={handleTouchStart}
+          onTouchEnd={handleTouchEnd}
+        >
+          <div
+            ref={trackRef}
+            className={`carousel-track ${!reducedMotion ? 'marquee-active' : ''}`}
+            style={reducedMotion ? { transform: `translateX(calc(-${slide} * (min(320px, 72vw) + 18px)))` } : undefined}
+          >
+            {Array.from({ length: slideCount }, (_, index) => {
+              const realIndex = index % totalSlides;
+              return (
+                <figure
+                  className="carousel-slide clickable"
+                  key={index}
+                  onClick={() => setLightboxIndex(realIndex)}
+                  onFocus={handleMouseEnter}
+                  onBlur={handleMouseLeave}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`Open campaign slide ${realIndex + 1} in fullscreen lightbox`}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                      e.preventDefault();
+                      setLightboxIndex(realIndex);
+                    }
+                  }}
+                >
+                  <img
+                    src={`/assets/carousel-${realIndex + 1}.png`}
+                    alt={`SattvaMunch campaign slide ${realIndex + 1}`}
+                    loading="lazy"
+                  />
+                  <figcaption className="campaign-meta">
+                    <span>Slide {String(realIndex + 1).padStart(2, '0')}</span>
+                    <span>The seed&apos;s passport</span>
+                  </figcaption>
+                </figure>
+              );
+            })}
           </div>
         </div>
       </div>
