@@ -1175,6 +1175,16 @@ function VisualGallery() {
 }
 
 function BrandFilm() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const video = videoRef.current;
+    if (video) {
+      video.setAttribute('playsinline', '');
+      video.setAttribute('webkit-playsinline', '');
+    }
+  }, []);
+
   return (
     <section className="film" aria-labelledby="film-title">
       <div className="wrap film-card">
@@ -1184,6 +1194,7 @@ function BrandFilm() {
           <p>A quiet film about wetlands, spice, and the small moment when a snack changes the direction of an afternoon.</p>
           <div className="film-player-wrapper">
             <video
+              ref={videoRef}
               id="brand-commercial-player"
               className="film-video-player"
               controls
