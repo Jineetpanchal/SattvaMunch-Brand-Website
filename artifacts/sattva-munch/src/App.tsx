@@ -2,7 +2,7 @@ import { Suspense, useEffect, useMemo, useRef, useState, type FormEvent } from '
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { useGLTF } from '@react-three/drei';
-import { ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, ChevronLeft, ChevronRight, Menu, X } from 'lucide-react';
+import { ArrowDown, ArrowRight, ArrowUp, ArrowUpRight, ChevronLeft, ChevronRight, Menu, Play, X } from 'lucide-react';
 import * as THREE from 'three';
 import { ErrorBoundary } from '@/components/error-boundary';
 import { Toaster } from '@/components/ui/toaster';
@@ -1176,6 +1176,7 @@ function VisualGallery() {
 
 function BrandFilm() {
   const videoRef = useRef<HTMLVideoElement>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
 
   useEffect(() => {
     const video = videoRef.current;
@@ -1184,6 +1185,19 @@ function BrandFilm() {
       video.setAttribute('webkit-playsinline', '');
     }
   }, []);
+
+  const handlePlay = (e?: React.MouseEvent | React.TouchEvent) => {
+    if (e) {
+      e.stopPropagation();
+    }
+    const video = videoRef.current;
+    if (!video) return;
+
+    // Direct synchronous call: video.play() is invoked immediately on the user event stack
+    // with NO preceding async calls, delays, or state updates to maintain trusted user gesture context on mobile browsers.
+    video.play();
+    setIsPlaying(true);
+  };
 
   return (
     <section className="film" aria-labelledby="film-title">
@@ -1202,11 +1216,24 @@ function BrandFilm() {
               preload="metadata"
               poster="/assets/commercial-poster.jpg"
               aria-label="SattvaMunch Brand Commercial Film"
+              onPlay={() => setIsPlaying(true)}
+              onPause={() => setIsPlaying(false)}
+              onEnded={() => setIsPlaying(false)}
             >
               <source src="/assets/commercial.mp4" type="video/mp4" />
-              <source src="/assets/SattvaMunch-Commercial (1).mp4" type="video/mp4" />
               Your browser does not support the video tag.
             </video>
+            {!isPlaying && (
+              <button
+                type="button"
+                className="film-play-btn"
+                onClick={handlePlay}
+                onTouchEnd={handlePlay}
+                aria-label="Play commercial film"
+              >
+                <Play className="film-play-icon" aria-hidden="true" />
+              </button>
+            )}
           </div>
         </div>
       </div>
