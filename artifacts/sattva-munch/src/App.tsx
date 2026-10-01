@@ -147,13 +147,57 @@ function ModelFallback() {
   );
 }
 
-function HeroModelScene() {
+interface HeroModelInteraction {
+  rotationY: number;
+  isDragging: boolean;
+  velocity: number;
+  lastInteractionTime: number;
+  autoRotateRamp: number;
+  tiltTargetX: number;
+  tiltTargetZ: number;
+}
+
+function HeroModelScene({ interactionRef }: { interactionRef: React.MutableRefObject<HeroModelInteraction> }) {
   const group = useRef<THREE.Group>(null);
 
   useFrame((_, delta) => {
     if (!group.current) return;
-    // Continuous steady vertical (Y-axis) rotation at moderate, pleasant speed (~14s full revolution)
-    group.current.rotation.y += delta * 0.45;
+    const state = interactionRef.current;
+    const now = performance.now();
+
+    if (state.isDragging) {
+      // Auto-rotation paused while actively dragged
+      state.autoRotateRamp = 0;
+    } else {
+      // Apply momentum decay if flicked
+      if (Math.abs(state.velocity) > 0.0001) {
+        state.rotationY += state.velocity * delta * 60;
+        state.velocity *= Math.pow(0.88, delta * 60);
+        if (Math.abs(state.velocity) < 0.0001) state.velocity = 0;
+      }
+
+      // Resume auto-rotation smoothly after 1.5s of inactivity
+      const elapsedSinceDrag = now - state.lastInteractionTime;
+      if (elapsedSinceDrag > 1500) {
+        state.autoRotateRamp = Math.min(1, state.autoRotateRamp + delta * 1.25);
+        state.rotationY += delta * 0.45 * state.autoRotateRamp;
+      }
+    }
+
+    // Free 360-degree rotation along Y-axis in either direction
+    group.current.rotation.y = state.rotationY;
+
+    // Smooth desktop hover-parallax tilt on X and Z axes
+    group.current.rotation.x = THREE.MathUtils.lerp(
+      group.current.rotation.x,
+      0.08 + state.tiltTargetX,
+      Math.min(1, delta * 6)
+    );
+    group.current.rotation.z = THREE.MathUtils.lerp(
+      group.current.rotation.z,
+      state.tiltTargetZ,
+      Math.min(1, delta * 6)
+    );
   });
 
   return (
@@ -201,10 +245,161 @@ function StaticMakhanaFallback() {
 
 function HeroModelCanvas() {
   const [webglAvailable] = useState(canUseWebGL);
+  const [isDragging, setIsDragging] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const interactionRef = useRef<HeroModelInteraction>({
+    rotationY: 0,
+    isDragging: false,
+    velocity: 0,
+    lastInteractionTime: -99999,
+    autoRotateRamp: 1,
+    tiltTargetX: 0,
+    tiltTargetZ: 0,
+  });
+
+  const pointerStateRef = useRef<{
+    pointerId: number;
+    pointerType: string;
+    startX: number;
+    startY: number;
+    lastX: number;
+    lastTime: number;
+    directionLocked: boolean;
+    isScrolling: boolean;
+    isDragging: boolean;
+  } | null>(null);
+
   if (!webglAvailable) return <StaticMakhanaFallback />;
 
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+    pointerStateRef.current = {
+      pointerId: e.pointerId,
+      pointerType: e.pointerType,
+      startX: e.clientX,
+      startY: e.clientY,
+      lastX: e.clientX,
+      lastTime: performance.now(),
+      directionLocked: false,
+      isScrolling: false,
+      isDragging: false,
+    };
+
+    if (e.pointerType === 'mouse') {
+      pointerStateRef.current.isDragging = true;
+      pointerStateRef.current.directionLocked = true;
+      interactionRef.current.isDragging = true;
+      interactionRef.current.velocity = 0;
+      interactionRef.current.lastInteractionTime = performance.now();
+      setIsDragging(true);
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        // ignore
+      }
+    }
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const ps = pointerStateRef.current;
+    const now = performance.now();
+    const rect = e.currentTarget.getBoundingClientRect();
+
+    // Desktop hover parallax tilt when NOT dragging with mouse
+    if ((!ps || !ps.isDragging) && e.pointerType !== 'touch') {
+      const normX = Math.max(-1, Math.min(1, ((e.clientX - rect.left) / rect.width - 0.5) * 2));
+      const normY = Math.max(-1, Math.min(1, ((e.clientY - rect.top) / rect.height - 0.5) * 2));
+      interactionRef.current.tiltTargetX = normY * 0.16;
+      interactionRef.current.tiltTargetZ = -normX * 0.14;
+    }
+
+    if (!ps || ps.pointerId !== e.pointerId) return;
+    if (ps.isScrolling) return;
+
+    const totalDx = e.clientX - ps.startX;
+    const totalDy = e.clientY - ps.startY;
+
+    // Disambiguate horizontal drag vs vertical page scroll for touch
+    if (ps.pointerType === 'touch' && !ps.directionLocked) {
+      const absX = Math.abs(totalDx);
+      const absY = Math.abs(totalDy);
+      if (absX < 6 && absY < 6) return;
+
+      ps.directionLocked = true;
+      if (absY > absX) {
+        // Natural vertical scroll on page — never hijack
+        ps.isScrolling = true;
+        return;
+      } else {
+        // Intentional horizontal rotation drag
+        ps.isDragging = true;
+        interactionRef.current.isDragging = true;
+        interactionRef.current.velocity = 0;
+        interactionRef.current.lastInteractionTime = now;
+        setIsDragging(true);
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId);
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    if (ps.isDragging) {
+      const dx = e.clientX - ps.lastX;
+      const dt = Math.max(1, now - ps.lastTime);
+      const SENSITIVITY = (Math.PI * 2) / 360; // 360px drag = full 360° physical spin
+      const deltaRot = dx * SENSITIVITY;
+
+      interactionRef.current.rotationY += deltaRot;
+      interactionRef.current.velocity = (deltaRot / dt) * 16.6;
+      interactionRef.current.lastInteractionTime = now;
+
+      ps.lastX = e.clientX;
+      ps.lastTime = now;
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const ps = pointerStateRef.current;
+    if (ps && ps.pointerId === e.pointerId) {
+      if (ps.isDragging) {
+        interactionRef.current.isDragging = false;
+        interactionRef.current.lastInteractionTime = performance.now();
+        interactionRef.current.velocity = Math.max(-0.05, Math.min(0.05, interactionRef.current.velocity));
+        setIsDragging(false);
+      }
+      pointerStateRef.current = null;
+      try {
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+        }
+      } catch {
+        // ignore
+      }
+    }
+  };
+
+  const handlePointerLeave = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (!pointerStateRef.current?.isDragging && e.pointerType !== 'touch') {
+      interactionRef.current.tiltTargetX = 0;
+      interactionRef.current.tiltTargetZ = 0;
+    }
+  };
+
   return (
-    <div className="hero-model-canvas" aria-label="A slowly rotating roasted makhana 3D model">
+    <div
+      ref={containerRef}
+      className={`hero-model-canvas ${isDragging ? 'is-dragging' : ''}`}
+      aria-label="A roasted makhana 3D model, draggable to rotate"
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerUp}
+      onPointerCancel={handlePointerUp}
+      onPointerLeave={handlePointerLeave}
+    >
       <span className="hero-makhana-shadow" aria-hidden="true" />
       <Canvas
         camera={{ position: [0, 0.1, 4.5], fov: 28, near: 0.1, far: 20 }}
@@ -219,7 +414,7 @@ function HeroModelCanvas() {
           position={[-3.5, 5, 4]}
         />
         <directionalLight color="#e8b56b" intensity={0.32} position={[4, 1.5, -2]} />
-        <HeroModelScene />
+        <HeroModelScene interactionRef={interactionRef} />
       </Canvas>
     </div>
   );
@@ -608,6 +803,7 @@ function CampaignCarousel() {
   const [slide, setSlide] = useState(0);
   const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [isSwipingActive, setIsSwipingActive] = useState(false);
 
   const trackRef = useRef<HTMLDivElement>(null);
   const offsetRef = useRef(0);
@@ -617,6 +813,20 @@ function CampaignCarousel() {
   const manualTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const rafIdRef = useRef<number | null>(null);
   const lastTimeRef = useRef<number | null>(null);
+  const preventClickRef = useRef(false);
+
+  const touchStateRef = useRef<{
+    pointerId?: number;
+    startX: number;
+    startY: number;
+    lastX: number;
+    hasMoved: boolean;
+    isSwiping: boolean;
+    isScrollingVertically: boolean;
+    directionLocked: boolean;
+    velocity: number;
+    lastTime: number;
+  } | null>(null);
 
   const totalSlides = 7;
   const visible = 3;
@@ -729,16 +939,161 @@ function CampaignCarousel() {
     isHoveredRef.current = true;
   };
   const handleMouseLeave = () => {
-    isHoveredRef.current = false;
-  };
-  const handleTouchStart = () => {
-    isHoveredRef.current = true;
-  };
-  const handleTouchEnd = () => {
-    if (manualTimerRef.current) clearTimeout(manualTimerRef.current);
-    manualTimerRef.current = setTimeout(() => {
+    if (!touchStateRef.current?.isSwiping) {
       isHoveredRef.current = false;
-    }, 2000);
+    }
+  };
+
+  // Touch & drag handlers: enables manual left/right swiping on the carousel strip
+  const handlePointerDown = (e: React.PointerEvent<HTMLDivElement>) => {
+    if (e.pointerType === 'mouse' && e.button !== 0) return;
+
+    if (manualTimerRef.current) clearTimeout(manualTimerRef.current);
+    isManualInteractingRef.current = true;
+    isHoveredRef.current = true;
+    preventClickRef.current = false;
+
+    const isMouse = e.pointerType === 'mouse';
+    touchStateRef.current = {
+      pointerId: e.pointerId,
+      startX: e.clientX,
+      startY: e.clientY,
+      lastX: e.clientX,
+      hasMoved: false,
+      isSwiping: isMouse,
+      isScrollingVertically: false,
+      directionLocked: isMouse,
+      velocity: 0,
+      lastTime: performance.now(),
+    };
+
+    if (isMouse) {
+      setIsSwipingActive(true);
+      try {
+        e.currentTarget.setPointerCapture(e.pointerId);
+      } catch {
+        // ignore
+      }
+    }
+  };
+
+  const handlePointerMove = (e: React.PointerEvent<HTMLDivElement>) => {
+    const ts = touchStateRef.current;
+    if (!ts || (ts.pointerId !== undefined && ts.pointerId !== e.pointerId)) return;
+    if (ts.isScrollingVertically) return;
+
+    const now = performance.now();
+    const totalDx = e.clientX - ts.startX;
+    const totalDy = e.clientY - ts.startY;
+
+    // Disambiguate for touch: vertical page scroll vs horizontal strip swipe
+    if (!ts.directionLocked) {
+      const absX = Math.abs(totalDx);
+      const absY = Math.abs(totalDy);
+      if (absX < 6 && absY < 6) return;
+
+      ts.directionLocked = true;
+      if (absY > absX) {
+        // Normal vertical page scroll — do not interfere or lock
+        ts.isScrollingVertically = true;
+        isManualInteractingRef.current = false;
+        isHoveredRef.current = false;
+        return;
+      } else {
+        // Intentional horizontal swipe along the carousel strip
+        ts.isSwiping = true;
+        setIsSwipingActive(true);
+        try {
+          e.currentTarget.setPointerCapture(e.pointerId);
+        } catch {
+          // ignore
+        }
+      }
+    }
+
+    if (ts.isSwiping) {
+      const dx = e.clientX - ts.lastX;
+      if (Math.abs(totalDx) > 7) {
+        ts.hasMoved = true;
+        preventClickRef.current = true;
+      }
+
+      const dt = Math.max(1, now - ts.lastTime);
+      ts.velocity = (dx / dt) * 16.6;
+      ts.lastX = e.clientX;
+      ts.lastTime = now;
+
+      if (!reducedMotion && trackRef.current) {
+        const { singleSetWidth } = getMetrics();
+        if (singleSetWidth > 0) {
+          // Dragging left (dx < 0) advances the strip forward (offset increases)
+          offsetRef.current -= dx;
+
+          // Seamless infinite wrap in both directions
+          if (offsetRef.current >= 2 * singleSetWidth) {
+            offsetRef.current -= singleSetWidth;
+          } else if (offsetRef.current < singleSetWidth) {
+            offsetRef.current += singleSetWidth;
+          }
+
+          trackRef.current.style.transition = 'none';
+          trackRef.current.style.transform = `translate3d(-${offsetRef.current}px, 0, 0)`;
+        }
+      }
+    }
+  };
+
+  const handlePointerUp = (e: React.PointerEvent<HTMLDivElement>) => {
+    const ts = touchStateRef.current;
+    if (ts && (ts.pointerId === undefined || ts.pointerId === e.pointerId)) {
+      if (ts.isSwiping) {
+        setIsSwipingActive(false);
+        if (reducedMotion) {
+          const totalDx = ts.lastX - ts.startX;
+          if (totalDx < -40) {
+            setSlide((prev) => Math.min(max, prev + 1));
+          } else if (totalDx > 40) {
+            setSlide((prev) => Math.max(0, prev - 1));
+          }
+        } else if (trackRef.current && Math.abs(ts.velocity) > 2) {
+          // Subtle momentum slide on release
+          const momentum = Math.max(-120, Math.min(120, ts.velocity * 5));
+          const { singleSetWidth } = getMetrics();
+          offsetRef.current -= momentum;
+          if (offsetRef.current >= 2 * singleSetWidth) {
+            offsetRef.current -= singleSetWidth;
+          } else if (offsetRef.current < singleSetWidth) {
+            offsetRef.current += singleSetWidth;
+          }
+          trackRef.current.style.transition = 'transform 0.35s cubic-bezier(0.2, 0.8, 0.2, 1)';
+          trackRef.current.style.transform = `translate3d(-${offsetRef.current}px, 0, 0)`;
+          setTimeout(() => {
+            if (trackRef.current) trackRef.current.style.transition = 'none';
+          }, 350);
+        }
+      }
+
+      touchStateRef.current = null;
+      try {
+        if (e.currentTarget.hasPointerCapture(e.pointerId)) {
+          e.currentTarget.releasePointerCapture(e.pointerId);
+        }
+      } catch {
+        // ignore
+      }
+
+      // Resume automatic auto-scroll after 4s inactivity (matching arrow button pause timing)
+      if (manualTimerRef.current) clearTimeout(manualTimerRef.current);
+      manualTimerRef.current = setTimeout(() => {
+        isManualInteractingRef.current = false;
+        isHoveredRef.current = false;
+      }, 4000);
+
+      // Reset preventClickRef after a microtask so that onClick suppression fires first
+      setTimeout(() => {
+        preventClickRef.current = false;
+      }, 80);
+    }
   };
 
   // Manual next button: snaps forward by 1 slide and temporarily pauses auto-drift for 4 seconds
@@ -870,11 +1225,13 @@ function CampaignCarousel() {
           </div>
         </div>
         <div
-          className="carousel-window"
+          className={`carousel-window ${isSwipingActive ? 'is-swiping' : ''}`}
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
-          onTouchStart={handleTouchStart}
-          onTouchEnd={handleTouchEnd}
+          onPointerDown={handlePointerDown}
+          onPointerMove={handlePointerMove}
+          onPointerUp={handlePointerUp}
+          onPointerCancel={handlePointerUp}
         >
           <div
             ref={trackRef}
@@ -887,7 +1244,10 @@ function CampaignCarousel() {
                 <figure
                   className="carousel-slide clickable"
                   key={index}
-                  onClick={() => setLightboxIndex(realIndex)}
+                  onClick={() => {
+                    if (preventClickRef.current) return;
+                    setLightboxIndex(realIndex);
+                  }}
                   onFocus={handleMouseEnter}
                   onBlur={handleMouseLeave}
                   role="button"
