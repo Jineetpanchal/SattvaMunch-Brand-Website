@@ -20,11 +20,11 @@ export default defineConfig({
           const decodedUrl = decodeURIComponent(rawUrl.split('?')[0]);
 
           if (
-            decodedUrl.includes('commercial.mp4') ||
+            decodedUrl.includes('commercial-v2.mp4') ||
             decodedUrl.includes('SattvaMunch-Commercial')
           ) {
             const possibleVideoPaths = [
-              path.resolve(import.meta.dirname, 'public/assets/commercial.mp4'),
+              path.resolve(import.meta.dirname, 'public/assets/commercial-v2.mp4'),
               path.resolve(import.meta.dirname, 'public/assets/SattvaMunch-Commercial (1).mp4'),
               path.resolve(import.meta.dirname, '../../attached_assets/SattvaMunch-Commercial (1).mp4'),
             ];

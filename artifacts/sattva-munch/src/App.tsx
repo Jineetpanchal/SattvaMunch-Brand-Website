@@ -1580,7 +1580,7 @@ function BrandFilm() {
               onPause={() => setIsPlaying(false)}
               onEnded={() => setIsPlaying(false)}
             >
-              <source src="/assets/commercial.mp4" type="video/mp4" />
+              <source src="/assets/commercial-v2.mp4" type="video/mp4" />
               Your browser does not support the video tag.
             </video>
             {!isPlaying && (
