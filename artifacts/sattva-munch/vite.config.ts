@@ -1,3 +1,4 @@
+process.env.NODE_ENV = 'development';
 import fs from 'fs';
 import path from 'path';
 import react from '@vitejs/plugin-react';
@@ -110,6 +111,33 @@ export default defineConfig({
     outDir: path.resolve(import.meta.dirname, '../../dist'),
     emptyOutDir: true,
     rollupOptions: {
+      output: {
+        manualChunks(id) {
+          if (id.includes('node_modules')) {
+            if (id.includes('three') || id.includes('@react-three')) {
+              return 'three-vendor';
+            }
+            if (
+              id.includes('recharts') ||
+              id.includes('victory-vendor') ||
+              id.includes('d3-') ||
+              id.includes('react-smooth')
+            ) {
+              return 'charts-vendor';
+            }
+            if (id.includes('@radix-ui') || id.includes('@floating-ui')) {
+              return 'ui-vendor';
+            }
+            if (
+              id.includes('/react/') ||
+              id.includes('/react-dom/') ||
+              id.includes('/scheduler/')
+            ) {
+              return 'react-vendor';
+            }
+          }
+        },
+      },
       onwarn(warning, defaultHandler) {
         if (warning.code === 'SOURCEMAP_ERROR') return;
         defaultHandler(warning);

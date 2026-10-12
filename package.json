@@ -8,8 +8,8 @@
     "scripts"
   ],
   "scripts": {
-    "dev": "npm run dev --workspace=@workspace/sattva-munch",
-    "build": "npm run build --workspace=@workspace/sattva-munch",
+    "dev": "npm --prefix artifacts/sattva-munch run dev",
+    "build": "npm --prefix artifacts/sattva-munch run build",
     "lint": "tsc --build",
     "typecheck:libs": "tsc --build",
     "typecheck": "npm run typecheck:libs"
