@@ -1546,17 +1546,10 @@ function BrandFilm() {
     }
   }, []);
 
-  const handlePlay = (e?: React.MouseEvent | React.TouchEvent) => {
-    if (e) {
-      e.stopPropagation();
-    }
+  const handlePlay = () => {
     const video = videoRef.current;
     if (!video) return;
-
-    // Direct synchronous call: video.play() is invoked immediately on the user event stack
-    // with NO preceding async calls, delays, or state updates to maintain trusted user gesture context on mobile browsers.
     video.play();
-    setIsPlaying(true);
   };
 
   return (
@@ -1588,7 +1581,6 @@ function BrandFilm() {
                 type="button"
                 className="film-play-btn"
                 onClick={handlePlay}
-                onTouchEnd={handlePlay}
                 aria-label="Play commercial film"
               >
                 <Play className="film-play-icon" aria-hidden="true" />
